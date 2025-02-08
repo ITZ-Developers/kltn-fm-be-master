@@ -1,0 +1,312 @@
+package com.master.controller;
+
+import com.master.constant.MasterConstant;
+import com.master.dto.account.MasterKeyDto;
+import com.master.form.account.InputKeyForm;
+import com.master.form.account.*;
+import com.master.mapper.AccountMapper;
+import com.master.model.Account;
+import com.master.repository.*;
+import com.master.service.MasterApiService;
+import com.master.utils.*;
+import com.master.dto.ApiMessageDto;
+import com.master.dto.ErrorCode;
+import com.master.dto.ResponseListDto;
+import com.master.dto.account.AccountAdminDto;
+import com.master.dto.account.AccountDto;
+import com.master.dto.account.AccountForgetPasswordDto;
+import com.master.model.Group;
+import com.master.model.criteria.AccountCriteria;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ConcurrentMap;
+
+@RestController
+@RequestMapping("/v1/account")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
+@Slf4j
+public class AccountController extends ABasicController{
+    @Autowired
+    private AccountRepository accountRepository;
+    @Autowired
+    private GroupRepository groupRepository;
+    @Autowired
+    private AccountMapper accountMapper;
+    @Autowired
+    private MasterApiService masterApiService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private CustomerRepository customerRepository;
+    @Autowired
+    @Qualifier("applicationConfig")
+    private ConcurrentMap<String, String> concurrentMap;
+    @Value("${aes.secret-key.key-information}")
+    private String keyInformationSecretKey;
+    @Value("${aes.secret-key.finance}")
+    private String financeSecretKey;
+    @Value("${aes.secret-key.decrypt-password}")
+    private String encryptPasswordSecretKey;
+
+    @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ACC_V')")
+    public ApiMessageDto<AccountAdminDto> get(@PathVariable("id") Long id) {
+        Account account = accountRepository.findById(id).orElse(null);
+        if (account == null) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
+        }
+        return makeSuccessResponse(accountMapper.fromEntityToAccountAdminDto(account), "Get account success");
+    }
+
+    @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ACC_L')")
+    public ApiMessageDto<ResponseListDto<List<AccountAdminDto>>> list(AccountCriteria accountCriteria, Pageable pageable) {
+        if (accountCriteria.getIsPaged().equals(MasterConstant.IS_PAGED_FALSE)){
+            pageable = PageRequest.of(0, Integer.MAX_VALUE);
+        }
+        Page<Account> accounts = accountRepository.findAll(accountCriteria.getCriteria(), pageable);
+        ResponseListDto<List<AccountAdminDto>> responseListObj = new ResponseListDto<>();
+        responseListObj.setContent(accountMapper.fromEntityListToAccountAdminDtoList(accounts.getContent()));
+        responseListObj.setTotalPages(accounts.getTotalPages());
+        responseListObj.setTotalElements(accounts.getTotalElements());
+        return makeSuccessResponse(responseListObj, "Get list account success");
+    }
+
+    @GetMapping(value = "/auto-complete", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ApiMessageDto<ResponseListDto<List<AccountDto>>> autoComplete(AccountCriteria accountCriteria) {
+        Pageable pageable = accountCriteria.getIsPaged().equals(MasterConstant.IS_PAGED_TRUE) ? PageRequest.of(0, 10) : PageRequest.of(0, Integer.MAX_VALUE);
+        accountCriteria.setStatus(MasterConstant.STATUS_ACTIVE);
+        Page<Account> accounts = accountRepository.findAll(accountCriteria.getCriteria(), pageable);
+        ResponseListDto<List<AccountDto>> responseListObj = new ResponseListDto<>();
+        responseListObj.setContent(accountMapper.fromEntityListToAccountDtoListAutoComplete(accounts.getContent()));
+        responseListObj.setTotalPages(accounts.getTotalPages());
+        responseListObj.setTotalElements(accounts.getTotalElements());
+        return makeSuccessResponse(responseListObj, "Get list account success");
+    }
+
+    @PostMapping(value = "/create-admin", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ACC_C_AD')")
+    public ApiMessageDto<String> createAdmin(@Valid @RequestBody CreateAccountAdminForm createAccountAdminForm, BindingResult bindingResult) {
+        Account accountByUsername = accountRepository.findFirstByUsername(createAccountAdminForm.getUsername()).orElse(null);
+        if (accountByUsername != null) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_USERNAME_EXISTED, "Username existed");
+        }
+        Account accountByEmail = accountRepository.findFirstByEmail(createAccountAdminForm.getEmail()).orElse(null);
+        if (accountByEmail != null){
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_EMAIL_EXISTED, "Email existed");
+        }
+        Account accountByPhone = accountRepository.findFirstByPhone(createAccountAdminForm.getPhone()).orElse(null);
+        if (accountByPhone != null){
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_PHONE_EXISTED, "Phone existed");
+        }
+        Group group = groupRepository.findById(createAccountAdminForm.getGroupId()).orElse(null);
+        if (group == null) {
+            return makeErrorResponse(ErrorCode.GROUP_ERROR_NOT_FOUND, "Not found group");
+        }
+        Account account = accountMapper.fromCreateAccountAdminFormToEntity(createAccountAdminForm);
+        account.setPassword(passwordEncoder.encode(createAccountAdminForm.getPassword()));
+        account.setKind(MasterConstant.USER_KIND_ADMIN);
+        if (!account.getKind().equals(group.getKind())) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_KIND_NOT_MATCH, "Account kind does not match group kind");
+        }
+        account.setGroup(group);
+        accountRepository.save(account);
+        return makeSuccessResponse(null, "Create account admin success");
+    }
+
+    @PutMapping(value = "/update-admin", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ACC_U_AD')")
+    public ApiMessageDto<String> updateAdmin(@Valid @RequestBody UpdateAccountAdminForm updateAccountAdminForm, BindingResult bindingResult) {
+        Account account = accountRepository.findById(updateAccountAdminForm.getId()).orElse(null);
+        if (account == null) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
+        }
+        if (updateAccountAdminForm.getEmail() != null && !updateAccountAdminForm.getEmail().equals(account.getEmail())){
+            Account accountByEmail = accountRepository.findFirstByEmail(updateAccountAdminForm.getEmail()).orElse(null);
+            if (accountByEmail != null){
+                return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_EMAIL_EXISTED, "Email existed");
+            }
+        }
+        if (updateAccountAdminForm.getPhone() != null && !updateAccountAdminForm.getPhone().equals(account.getPhone())){
+            Account accountByPhone = accountRepository.findFirstByPhone(updateAccountAdminForm.getPhone()).orElse(null);
+            if (accountByPhone != null){
+                return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_PHONE_EXISTED, "Phone existed");
+            }
+        }
+        Group group = groupRepository.findById(updateAccountAdminForm.getGroupId()).orElse(null);
+        if (group == null) {
+            return makeErrorResponse(ErrorCode.GROUP_ERROR_NOT_FOUND, "Not found group");
+        }
+        if (StringUtils.isNoneBlank(updateAccountAdminForm.getAvatarPath())) {
+            if(!updateAccountAdminForm.getAvatarPath().equals(account.getAvatarPath())){
+                masterApiService.deleteFile(account.getAvatarPath());
+            }
+            account.setAvatarPath(updateAccountAdminForm.getAvatarPath());
+        }
+        if (!account.getKind().equals(group.getKind())) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_KIND_NOT_MATCH, "Account kind does not match group kind");
+        }
+        accountMapper.fromUpdateAccountAdminFormToEntity(updateAccountAdminForm, account);
+        account.setGroup(group);
+        accountRepository.save(account);
+        return makeSuccessResponse(null, "Update account admin success");
+    }
+
+    @DeleteMapping(value = "/delete/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ACC_D')")
+    public ApiMessageDto<String> delete(@PathVariable("id") Long id) {
+        Account account = accountRepository.findById(id).orElse(null);
+        if (account == null) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
+        }
+        if (account.getIsSuperAdmin()) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_ALLOW_DELETE_SUPPER_ADMIN, "Not allow to delete super admin");
+        }
+        if (Long.valueOf(getCurrentUser()).equals(account.getId())){
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_ALLOW_DELETE_YOURSELF, "Not allow to delete yourself");
+        }
+        masterApiService.deleteFile(account.getAvatarPath());
+        customerRepository.deleteAllByAccountId(id);
+        accountRepository.deleteById(id);
+        return makeSuccessResponse(null, "Delete account success");
+    }
+
+    @GetMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ApiMessageDto<AccountDto> profile() {
+        Account account = accountRepository.findById(getCurrentUser()).orElse(null);
+        if (account == null) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
+        }
+        return makeSuccessResponse(accountMapper.fromEntityToAccountDtoProfile(account), "Get profile success");
+    }
+
+    @PutMapping(value = "/update-profile-admin", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ApiMessageDto<String> updateProfileAdmin(@Valid @RequestBody UpdateProfileAdminForm updateProfileAdminForm, BindingResult bindingResult) {
+        Account account = accountRepository.findById(getCurrentUser()).orElse(null);
+        if (account == null) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
+        }
+        if(!passwordEncoder.matches(updateProfileAdminForm.getOldPassword(), account.getPassword())){
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_WRONG_PASSWORD, "Old password is incorrect");
+        }
+        if (StringUtils.isNoneBlank(updateProfileAdminForm.getAvatarPath())) {
+            if(!updateProfileAdminForm.getAvatarPath().equals(account.getAvatarPath())){
+                //delete old image
+                masterApiService.deleteFile(account.getAvatarPath());
+            }
+            account.setAvatarPath(updateProfileAdminForm.getAvatarPath());
+        }
+        accountMapper.fromUpdateProfileAdminFormToEntity(updateProfileAdminForm, account);
+        accountRepository.save(account);
+        return makeSuccessResponse(null, "Update profile success");
+    }
+
+    @PostMapping(value = "/request-forget-password", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ApiMessageDto<AccountForgetPasswordDto> requestForgetPassword(@Valid @RequestBody RequestForgetPasswordForm forgetForm, BindingResult bindingResult){
+        Account account = accountRepository.findFirstByEmail(forgetForm.getEmail()).orElse(null);
+        if (account == null) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
+        }
+        String otp = masterApiService.getOTPForgetPassword();
+        account.setAttemptCode(0);
+        account.setResetPwdCode(otp);
+        account.setResetPwdTime(new Date());
+        accountRepository.save(account);
+        masterApiService.sendEmail(account.getEmail(),"OTP: " + otp, "Request forget password successful, please check email",false);
+        AccountForgetPasswordDto accountForgetPasswordDto = new AccountForgetPasswordDto();
+        String zipUserId = ZipUtils.zipString(account.getId()+ ";" + otp);
+        accountForgetPasswordDto.setUserId(zipUserId);
+        return makeSuccessResponse(accountForgetPasswordDto, "Request forget password successful, please check email");
+    }
+
+    @PostMapping(value = "/reset-password", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ApiMessageDto<String> forgetPassword(@Valid @RequestBody ResetPasswordForm resetPasswordForm, BindingResult bindingResult){
+        String[] unzip = ZipUtils.unzipString(resetPasswordForm.getUserId()).split(";", 2);
+        Long id = ConvertUtils.convertStringToLong(unzip[0]);
+        Account account = accountRepository.findById(id).orElse(null);
+        if (account == null ) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
+        }
+        if(account.getAttemptCode() >= MasterConstant.MAX_ATTEMPT_FORGET_PWD){
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_EXCEEDED_NUMBER_OF_INPUT_ATTEMPT_OTP, "Exceeded number of input attempt OTP");
+        }
+        if(!account.getResetPwdCode().equals(resetPasswordForm.getOtp()) ||
+                (new Date().getTime() - account.getResetPwdTime().getTime() >= MasterConstant.MAX_TIME_FORGET_PWD)){
+            account.setAttemptCode(account.getAttemptCode() + 1);
+            accountRepository.save(account);
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_OTP_INVALID, "OTP code invalid or has expired");
+        }
+        if (passwordEncoder.matches(resetPasswordForm.getNewPassword(), account.getPassword())) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NEW_PASSWORD_INVALID, "New password must be different from old password");
+        }
+        account.setResetPwdTime(null);
+        account.setResetPwdCode(null);
+        account.setAttemptCode(null);
+        account.setPassword(passwordEncoder.encode(resetPasswordForm.getNewPassword()));
+        accountRepository.save(account);
+        return makeSuccessResponse(null, "Reset password success");
+    }
+
+    @PutMapping(value = "/change-profile-password", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ApiMessageDto<String> changeProfilePassword(@Valid @RequestBody ChangeProfilePasswordAccountForm changeProfilePasswordAccountForm, BindingResult bindingResult) {
+        Account account = accountRepository.findById(getCurrentUser()).orElse(null);
+        if (account == null) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
+        }
+        if(!passwordEncoder.matches(changeProfilePasswordAccountForm.getOldPassword(), account.getPassword())){
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_WRONG_PASSWORD, "Old password is incorrect");
+        }
+        if (changeProfilePasswordAccountForm.getNewPassword().equals(changeProfilePasswordAccountForm.getOldPassword())) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NEW_PASSWORD_INVALID, "New password must be different from old password");
+        }
+        account.setPassword(passwordEncoder.encode(changeProfilePasswordAccountForm.getNewPassword()));
+        accountRepository.save(account);
+        return makeSuccessResponse(null, "Change profile password success");
+    }
+
+    @PostMapping(value = "/input-key", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ACC_I_K')")
+    public ApiMessageDto<String> inputMasterKey(@Valid @RequestBody InputKeyForm inputKeyForm, BindingResult bindingResult){
+        String decryptFinanceSecretKey= RSAUtils.decrypt(inputKeyForm.getPrivateKey(), financeSecretKey);
+        String decryptKeyInformationSecretKey = RSAUtils.decrypt(inputKeyForm.getPrivateKey(), keyInformationSecretKey);
+        String decryptPasswordSecretKey = RSAUtils.decrypt(inputKeyForm.getPrivateKey(), encryptPasswordSecretKey);
+        if (decryptFinanceSecretKey == null || decryptKeyInformationSecretKey == null || decryptPasswordSecretKey == null){
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_PRIVATE_KEY_INVALID, "Private key invalid");
+        }
+        concurrentMap.put(MasterConstant.MASTER_PRIVATE_KEY, inputKeyForm.getPrivateKey());
+        return makeSuccessResponse(null, "Input key success");
+    }
+
+    @GetMapping(value = "/clear-key", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ACC_C_K')")
+    public ApiMessageDto<String> clearMasterKey() {
+        concurrentMap.clear();
+        return makeSuccessResponse(null, "Clear key success");
+    }
+
+    @GetMapping(value = "/get-key", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ApiMessageDto<MasterKeyDto> getMasterKey() {
+        String privateKey = concurrentMap.get(MasterConstant.MASTER_PRIVATE_KEY);
+        if (StringUtils.isBlank(privateKey)) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_PRIVATE_KEY_INVALID, "Private key not found");
+        }
+        MasterKeyDto masterKeyDto = new MasterKeyDto();
+        masterKeyDto.setPrivateKey(privateKey);
+        return makeSuccessResponse(masterKeyDto, "Get key success");
+    }
+}

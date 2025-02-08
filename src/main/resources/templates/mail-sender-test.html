@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Email Subject</title>
+    <style>
+        /* Add your custom styles here */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background-color: #f4f5e7;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);}
+        h1 {
+            color: #333333;
+            text-align: center;
+        }
+
+        p {
+            color: #555555;
+            text-align: center;
+        }
+        .banner {
+            display: block;
+            margin: 0 auto;
+            margin-bottom: 20px;
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <img src="https://th.bing.com/th/id/R.0e1ffc7dea904a8f2b74055204229b5f?rik=7cxrwUDUqYJIfQ&pid=ImgRaw&r=0" alt="Banner Image" class="banner">
+    <h1>Your Email Heading</h1>
+    <p>Hello [Recipient's Name],</p>
+    <p>Congratulations, you’ve set up your F account!.</p>
+    <p>The verification code is:</p>
+    <p style="color: red;"><span th:text="${code}"></span></p>
+    <p>Best regards,</p>
+    <p>Your Name</p>
+    <p th:text="${date}"></p>
+</div>
+</body>
+</html>
