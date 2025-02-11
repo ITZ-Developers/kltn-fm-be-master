@@ -1,5 +1,7 @@
 package com.master.config;
 
+import com.master.exception.BadRequestException;
+import com.master.exception.NotFoundException;
 import com.master.exception.oauth.CustomOauthException;
 import com.master.service.impl.UserServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -51,13 +54,6 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     ObjectMapper objectMapper;
 
     @Bean
-    public TokenStore tokenStore() {
-        JdbcTokenStore j = new JdbcTokenStore(jdbcTemplate.getDataSource());
-        j.setAuthenticationKeyGenerator(new CustomAuthenticationKeyGenerator());
-        return j;
-    }
-
-    @Bean
     public JwtAccessTokenConverter accessTokenConverter() {
         JwtAccessTokenConverter converter = new JwtAccessTokenConverter();
         converter.setAccessTokenConverter(new CustomTokenConverter());
@@ -81,11 +77,20 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
                 .tokenEnhancer(tokenEnhancerChain)
                 .tokenGranter(tokenGranter(endpoints))
                 .accessTokenConverter(accessTokenConverter())
-                .tokenStore(tokenStore())
+//                .tokenStore(tokenStore())
                 .reuseRefreshTokens(false)
                 .userDetailsService(userDetailsService)
                 .exceptionTranslator((exception -> {
-                            if (exception instanceof OAuth2Exception) {
+                            if (exception instanceof NotFoundException) {
+                                return ResponseEntity
+                                        .status(HttpStatus.NOT_FOUND)
+                                        .body(new CustomOauthException(exception.getMessage(), ((NotFoundException) exception).getCode()));
+                            }
+                            if (exception instanceof BadRequestException) {
+                                return ResponseEntity
+                                        .badRequest()
+                                        .body(new CustomOauthException(exception.getMessage(), ((BadRequestException) exception).getCode()));
+                            } else if (exception instanceof OAuth2Exception) {
                                 OAuth2Exception oAuth2Exception = (OAuth2Exception) exception;
                                 return ResponseEntity
                                         .status(oAuth2Exception.getHttpErrorCode())
