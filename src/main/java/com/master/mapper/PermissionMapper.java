@@ -11,14 +11,12 @@ import java.util.List;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE,
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface PermissionMapper {
-
     @Mapping(source = "name", target = "name")
     @Mapping(source = "action", target = "action")
     @Mapping(source = "showMenu", target = "showMenu")
-    @Mapping(source = "description", target = "description")
     @Mapping(source = "nameGroup", target = "nameGroup")
     @Mapping(source = "permissionCode", target = "permissionCode")
-    @Mapping(source = "isSystem", target = "isSystem")
+    @Mapping(source = "kind", target = "kind")
     @BeanMapping(ignoreByDefault = true)
     Permission fromCreatePermissionFormToEntity(CreatePermissionForm createPermissionForm);
 
@@ -26,10 +24,9 @@ public interface PermissionMapper {
     @Mapping(source = "name", target = "name")
     @Mapping(source = "action", target = "action")
     @Mapping(source = "showMenu", target = "showMenu")
-    @Mapping(source = "description", target = "description")
     @Mapping(source = "nameGroup", target = "nameGroup")
     @Mapping(source = "permissionCode", target = "permissionCode")
-    @Mapping(source = "isSystem", target = "isSystem")
+    @Mapping(source = "kind", target = "kind")
     @Mapping(source = "status", target = "status")
     @Mapping(source = "createdDate", target = "createdDate")
     @Mapping(source = "modifiedDate", target = "modifiedDate")
@@ -45,7 +42,7 @@ public interface PermissionMapper {
     @Mapping(source = "action", target = "action")
     @Mapping(source = "nameGroup", target = "nameGroup")
     @Mapping(source = "permissionCode", target = "permissionCode")
-    @Mapping(source = "isSystem", target = "isSystem")
+    @Mapping(source = "kind", target = "kind")
     @BeanMapping(ignoreByDefault = true)
     @Named("fromEntityToPermissionDto")
     PermissionDto fromEntityToPermissionDto(Permission permission);

@@ -16,6 +16,7 @@ import com.master.repository.ServerProviderRepository;
 import com.master.utils.TenantUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +39,8 @@ public class ServerProviderController extends ABasicController {
     private DbConfigRepository dbConfigRepository;
     @Autowired
     private ServerProviderMapper serverProviderMapper;
+    @Value("${app.driver-class-name}")
+    private String driverClassName;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('SE_P_V')")
@@ -51,7 +54,7 @@ public class ServerProviderController extends ABasicController {
 
     @GetMapping(value = "/auto-complete", produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiMessageDto<ResponseListDto<List<ServerProviderDto>>> autoComplete(ServerProviderCriteria serverProviderCriteria) {
-        Pageable pageable = serverProviderCriteria.getIsPaged().equals(MasterConstant.IS_PAGED_TRUE) ? PageRequest.of(0, 10) : PageRequest.of(0, Integer.MAX_VALUE);
+        Pageable pageable = serverProviderCriteria.getIsPaged().equals(MasterConstant.BOOLEAN_TRUE) ? PageRequest.of(0, 10) : PageRequest.of(0, Integer.MAX_VALUE);
         serverProviderCriteria.setStatus(MasterConstant.STATUS_ACTIVE);
         Page<ServerProvider> serverProviders = serverProviderRepository.findAll(serverProviderCriteria.getCriteria(), pageable);
         ResponseListDto<List<ServerProviderDto>> responseListDto = new ResponseListDto<>();
@@ -64,7 +67,7 @@ public class ServerProviderController extends ABasicController {
     @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('SE_P_L')")
     public ApiMessageDto<ResponseListDto<List<ServerProviderAdminDto>>> list(ServerProviderCriteria serverProviderCriteria, Pageable pageable) {
-        if (serverProviderCriteria.getIsPaged().equals(MasterConstant.IS_PAGED_FALSE)) {
+        if (serverProviderCriteria.getIsPaged().equals(MasterConstant.BOOLEAN_FALSE)) {
             pageable = PageRequest.of(0, Integer.MAX_VALUE);
         }
         Page<ServerProvider> serverProviders = serverProviderRepository.findAll(serverProviderCriteria.getCriteria(), pageable);
@@ -82,6 +85,7 @@ public class ServerProviderController extends ABasicController {
         if (serverProviderRepository.findFirstByUrl(serverProvider.getUrl()).isPresent()) {
             return makeErrorResponse(ErrorCode.SERVER_PROVIDER_ERROR_URL_EXISTED, "Url existed");
         }
+        serverProvider.setDriverClassName(driverClassName);
         serverProvider.setMySqlJdbcUrl(TenantUtils.getMySqlJdbcUrl(createServerProviderForm.getHost(), createServerProviderForm.getPort()));
         serverProviderRepository.save(serverProvider);
         return makeSuccessResponse(null, "Create server provider success");

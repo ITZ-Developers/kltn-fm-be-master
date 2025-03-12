@@ -6,7 +6,6 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import javax.validation.constraints.*;
-import java.util.Date;
 
 @Data
 @ApiModel
@@ -40,6 +39,6 @@ public class CreateAccountAdminForm {
     @StatusConstraint
     private Integer status;
     @NotNull(message = "groupId cannot be null")
-    @ApiModelProperty(name = "groupId", required = true)
+    @ApiModelProperty(required = true)
     private Long groupId;
 }

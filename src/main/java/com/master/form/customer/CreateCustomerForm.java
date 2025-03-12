@@ -12,9 +12,6 @@ import javax.validation.constraints.Size;
 @Data
 @ApiModel
 public class CreateCustomerForm {
-    @NotBlank(message = "name cannot be null")
-    @ApiModelProperty(name = "name", required = true)
-    private String name;
     @NotBlank(message = "username cannot be null")
     @Size(min = 2, max = 20, message = "username must be between 2 and 20 characters")
     @UsernameConstraint
@@ -39,9 +36,6 @@ public class CreateCustomerForm {
     @PhoneConstraint
     @ApiModelProperty(name = "phone", required = true)
     private String phone;
-    @NotNull(message = "groupId cannot be null")
-    @ApiModelProperty(name = "groupId", required = true)
-    private Long groupId;
     @ApiModelProperty(name = "status", required = true)
     @StatusConstraint
     private Integer status;

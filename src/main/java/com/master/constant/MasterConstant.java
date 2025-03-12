@@ -13,16 +13,16 @@ public class MasterConstant {
     public static final String HOST_PATTERN = "^(localhost|(([a-z0-9\\-]+\\.)*[a-z]{2,})|(\\d{1,3}\\.){3}\\d{1,3}|\\[([0-9a-f:]+)\\])$";
     public static final String PORT_PATTERN = "^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$";
 
+    public static final String QR_CODE_PASSWORD = "ZHVjdHJvbmc=";
+
     public static final Integer USER_KIND_ADMIN = 1;
     public static final Integer USER_KIND_CUSTOMER = 2;
+    public static final Integer USER_KIND_EMPLOYEE = 3;
 
     public static final Integer STATUS_ACTIVE = 1;
     public static final Integer STATUS_PENDING = 0;
     public static final Integer STATUS_LOCK = -1;
     public static final Integer STATUS_DELETE = -2;
-
-    public static final Integer GROUP_KIND_ADMIN = 1;
-    public static final Integer GROUP_KIND_MANAGER = 2;
 
     public static final Integer MAX_ATTEMPT_FORGET_PWD = 5;
     public static final int MAX_TIME_FORGET_PWD = 5 * 60 * 1000;
@@ -34,11 +34,11 @@ public class MasterConstant {
     public static final Integer SORT_DATE_ASC = 1;
     public static final Integer SORT_DATE_DESC = 2;
 
-    public static final Integer IS_PAGED_TRUE = 1;
-    public static final Integer IS_PAGED_FALSE = 0;
+    public static final Integer BOOLEAN_TRUE = 1;
+    public static final Integer BOOLEAN_FALSE = 0;
 
-    public static final Integer IGNORE_ENTITY_RELATIONSHIP_TRUE = 1;
-    public static final Integer IGNORE_ENTITY_RELATIONSHIP_FALSE = 0;
+    public static final Integer PERMISSION_KIND_SYSTEM = 1;
+    public static final Integer PERMISSION_KIND_EMPLOYEE = 2;
 
     private MasterConstant(){
         throw new IllegalStateException("Utility class");

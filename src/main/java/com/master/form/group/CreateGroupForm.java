@@ -7,6 +7,7 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 @Data
 @ApiModel
@@ -17,9 +18,9 @@ public class CreateGroupForm {
     @NotBlank(message = "description cannot be null")
     @ApiModelProperty(name = "description", required = true)
     private String description;
-    @NotNull(message = "permissions cannot be null")
-    @ApiModelProperty(name = "permissions", required = true)
-    private Long[] permissions;
+    @NotNull(message = "permissionIds cannot be null")
+    @ApiModelProperty(name = "permissionIds", required = true)
+    private List<Long> permissionIds;
     @NotNull(message = "kind cannot be null")
     @UserKind
     @ApiModelProperty(name = "kind", required = true)

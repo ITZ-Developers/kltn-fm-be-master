@@ -12,13 +12,11 @@ import java.util.List;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE,
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface ServerProviderMapper {
-
     @Mapping(target = "name", source = "name")
     @Mapping(target = "url", source = "url")
     @Mapping(target = "maxTenant", source = "maxTenant")
     @Mapping(target = "mySqlRootUser", source = "mySqlRootUser")
     @Mapping(target = "mySqlRootPassword", source = "mySqlRootPassword")
-    @Mapping(target = "driverClassName", source = "driverClassName")
     @BeanMapping(ignoreByDefault = true)
     ServerProvider fromCreateServerProviderFormToEntity(CreateServerProviderForm createServerProviderForm);
 
@@ -26,10 +24,6 @@ public interface ServerProviderMapper {
     @Mapping(target = "name", source = "name")
     @Mapping(target = "url", source = "url")
     @Mapping(target = "maxTenant", source = "maxTenant")
-    @Mapping(target = "mySqlJdbcUrl", source = "url")
-    @Mapping(target = "mySqlRootUser", source = "mySqlRootUser")
-    @Mapping(target = "mySqlRootPassword", source = "mySqlRootPassword")
-    @Mapping(target = "driverClassName", source = "driverClassName")
     @BeanMapping(ignoreByDefault = true)
     void fromUpdateServerProviderFormToEntity(UpdateServerProviderForm updateServerProviderForm, @MappingTarget ServerProvider serverProvider);
 

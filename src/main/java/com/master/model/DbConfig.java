@@ -3,6 +3,8 @@ package com.master.model;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -24,12 +26,11 @@ public class DbConfig extends Auditable<String> {
     private Integer maxConnection;
     private String driverClassName;
     private Boolean initialize;
-    @Column(columnDefinition = "text")
-    private String license;
     @ManyToOne
     @JoinColumn(name = "server_provider_id")
     private ServerProvider serverProvider;
     @OneToOne
     @JoinColumn(name = "location_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Location location;
 }

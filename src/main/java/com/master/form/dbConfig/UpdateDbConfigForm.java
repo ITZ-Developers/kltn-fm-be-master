@@ -19,6 +19,4 @@ public class UpdateDbConfigForm {
     private Integer maxConnection;
     @ApiModelProperty(name = "initialize")
     private Boolean initialize;
-    @ApiModelProperty(name = "license")
-    private String license;
 }

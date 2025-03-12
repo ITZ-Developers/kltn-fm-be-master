@@ -24,16 +24,4 @@ public class UpdateServerProviderForm {
     @Min(value = 1, message = "maxTenant must be greater than or equal to 1")
     @ApiModelProperty(name = "maxTenant", required = true)
     private Integer maxTenant;
-    @NotBlank(message = "mySqlJdbcUrl cannot be null")
-    @ApiModelProperty(name = "mySqlJdbcUrl", required = true)
-    private String mySqlJdbcUrl;
-    @NotBlank(message = "mySqlRootUser cannot be null")
-    @ApiModelProperty(name = "mySqlRootUser", required = true)
-    private String mySqlRootUser;
-    @NotBlank(message = "mySqlRootPassword cannot be null")
-    @ApiModelProperty(name = "mySqlRootPassword", required = true)
-    private String mySqlRootPassword;
-    @NotBlank(message = "driverClassName cannot be null")
-    @ApiModelProperty(name = "driverClassName", required = true)
-    private String driverClassName;
 }

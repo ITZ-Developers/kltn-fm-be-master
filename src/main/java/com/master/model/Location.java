@@ -6,6 +6,7 @@ import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Entity
 @Table(name = "db_mst_location")
@@ -19,14 +20,20 @@ public class Location extends Auditable<String> {
     private Long id;
     private String tenantId;
     private String name;
-    private String address;
     private String logoPath;
-    private String bannerPath;
     private String hotline;
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String settings;
-    private String language;
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private Customer customer;
+    private Date startDate;
+    private Date expiredDate;
+    @Column(columnDefinition = "TEXT")
+    private String aesSecretKey;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tag_id")
+    private Tag tag;
+    @OneToOne(mappedBy = "location", fetch = FetchType.LAZY)
+    private DbConfig dbConfig;
 }

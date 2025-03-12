@@ -3,6 +3,7 @@ package com.master.config;
 import com.master.exception.BadRequestException;
 import com.master.exception.NotFoundException;
 import com.master.exception.oauth.CustomOauthException;
+import com.master.redis.RedisService;
 import com.master.service.impl.UserServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,35 +24,32 @@ import org.springframework.security.oauth2.config.annotation.web.configurers.Aut
 import org.springframework.security.oauth2.provider.CompositeTokenGranter;
 import org.springframework.security.oauth2.provider.TokenGranter;
 import org.springframework.security.oauth2.provider.token.TokenEnhancerChain;
-import org.springframework.security.oauth2.provider.token.TokenStore;
-import org.springframework.security.oauth2.provider.token.store.JdbcTokenStore;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Configuration
 @EnableAuthorizationServer
 public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
-
     @Autowired
     private AuthenticationManager authenticationManager;
-
-    @Value("${qrauth.auth.signing.key}")
+    @Value("${auth.signing.key}")
     private String signingKey;
-
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
     @Autowired
     private UserDetailsService userDetailsService;
-
     @Autowired
     private UserServiceImpl userService;
-
     @Autowired
-    ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
+    @Autowired
+    private RedisService redisService;
+    @Value("${mfa.enabled}")
+    private Boolean isMfaEnabled;
 
     @Bean
     public JwtAccessTokenConverter accessTokenConverter() {
@@ -69,7 +67,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     @Override
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
         TokenEnhancerChain tokenEnhancerChain = new TokenEnhancerChain();
-        tokenEnhancerChain.setTokenEnhancers(Arrays.asList(new CustomTokenEnhancer(jdbcTemplate,objectMapper), accessTokenConverter()));
+        tokenEnhancerChain.setTokenEnhancers(Arrays.asList(new CustomTokenEnhancer(jdbcTemplate, objectMapper, isMfaEnabled, redisService), accessTokenConverter()));
         endpoints
                 .pathMapping("/oauth/authorize", "/api/authorize")
                 .pathMapping("/oauth/token", "/api/token")
@@ -103,9 +101,9 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     }
 
     private TokenGranter tokenGranter(final AuthorizationServerEndpointsConfigurer endpoints) {
-        List<TokenGranter> granters = new ArrayList<TokenGranter>(Arrays.asList(endpoints.getTokenGranter()));
-        granters.add(new CustomTokenGranter(authenticationManager, endpoints.getTokenServices(), endpoints.getClientDetailsService(), endpoints.getOAuth2RequestFactory(), "multi-tenant", userService));
-        granters.add(new CustomTokenGranter(authenticationManager, endpoints.getTokenServices(), endpoints.getClientDetailsService(), endpoints.getOAuth2RequestFactory(), SecurityConstant.GRANT_TYPE_KITPLAY, userService));
+        List<TokenGranter> granters = new ArrayList<>(Collections.singletonList(endpoints.getTokenGranter()));
+        granters.add(new CustomTokenGranter(authenticationManager, endpoints.getTokenServices(), endpoints.getClientDetailsService(), endpoints.getOAuth2RequestFactory(), SecurityConstant.GRANT_TYPE_CUSTOMER, userService));
+        granters.add(new CustomTokenGranter(authenticationManager, endpoints.getTokenServices(), endpoints.getClientDetailsService(), endpoints.getOAuth2RequestFactory(), SecurityConstant.GRANT_TYPE_EMPLOYEE, userService));
         return new CompositeTokenGranter(granters);
     }
 
@@ -115,5 +113,4 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
         oauthServer.tokenKeyAccess("hasAuthority('ROLE_TRUSTED_CLIENT')").checkTokenAccess("hasAuthority('ROLE_TRUSTED_CLIENT')");
         oauthServer.checkTokenAccess("permitAll()");
     }
-
 }

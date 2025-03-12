@@ -21,8 +21,7 @@ public class Permission extends Auditable<String> {
     private String name;
     private String action;
     private Boolean showMenu;
-    private String description;
     private String nameGroup;
     private String permissionCode;
-    private Boolean isSystem;
+    private Integer kind; // 1: System, 2: Employee
 }

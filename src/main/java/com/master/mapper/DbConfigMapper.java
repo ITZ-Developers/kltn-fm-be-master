@@ -13,18 +13,14 @@ import java.util.List;
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
         uses = {ServerProviderMapper.class, LocationMapper.class})
 public interface DbConfigMapper {
-    @Mapping(target = "username", source = "username")
-    @Mapping(target = "password", source = "password")
     @Mapping(target = "maxConnection", source = "maxConnection")
     @Mapping(target = "initialize", source = "initialize")
-    @Mapping(target = "license", source = "license")
     @BeanMapping(ignoreByDefault = true)
     DbConfig fromCreateDbConfigFormToEntity(CreateDbConfigForm createDbConfigForm);
 
     @Mapping(target = "id", source = "id")
     @Mapping(target = "maxConnection", source = "maxConnection")
     @Mapping(target = "initialize", source = "initialize")
-    @Mapping(target = "license", source = "license")
     @BeanMapping(ignoreByDefault = true)
     void fromUpdateDbConfigFormToEntity(UpdateDbConfigForm updateDbConfigForm, @MappingTarget DbConfig dbConfig);
 
@@ -36,7 +32,6 @@ public interface DbConfigMapper {
     @Mapping(target = "maxConnection", source = "maxConnection")
     @Mapping(target = "driverClassName", source = "driverClassName")
     @Mapping(target = "initialize", source = "initialize")
-    @Mapping(target = "license", source = "license")
     @Mapping(target = "serverProvider", source = "serverProvider", qualifiedByName = "fromEntityToServerProviderDto")
     @Mapping(target = "location", source = "location", qualifiedByName = "fromEntityToLocationDto")
     @Mapping(target = "status", source = "status")

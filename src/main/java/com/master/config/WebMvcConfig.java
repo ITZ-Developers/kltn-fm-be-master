@@ -81,9 +81,4 @@ public class WebMvcConfig implements WebMvcConfigurer {
         objectMapper.setDateFormat(format);
         return objectMapper;
     }
-
-    @Bean("applicationConfig")
-    public ConcurrentMap<String, String> getApplicationConfig(){
-        return new ConcurrentHashMap<String, String>();
-    }
 }

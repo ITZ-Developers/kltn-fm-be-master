@@ -13,7 +13,6 @@ import java.util.List;
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
         uses = {PermissionMapper.class} )
 public interface GroupMapper {
-
     @Mapping(source = "name", target = "name")
     @Mapping(source = "description", target = "description")
     @Mapping(source = "kind", target = "kind")
@@ -31,7 +30,6 @@ public interface GroupMapper {
     @Mapping(source = "kind", target = "kind")
     @Mapping(source = "permissions", target = "permissions", qualifiedByName = "fromEntityListToPermissionDtoList")
     @Mapping(source = "status", target = "status")
-    @Mapping(source = "isSystemRole", target = "isSystemRole")
     @Mapping(source = "createdDate", target = "createdDate")
     @Mapping(source = "modifiedDate", target = "modifiedDate")
     @BeanMapping(ignoreByDefault = true)
@@ -44,7 +42,6 @@ public interface GroupMapper {
     @Mapping(source = "id", target = "id")
     @Mapping(source = "name", target = "name")
     @Mapping(source = "kind", target = "kind")
-    @Mapping(source = "isSystemRole", target = "isSystemRole")
     @Mapping(source = "description", target = "description")
     @Mapping(source = "permissions", target = "permissions", qualifiedByName = "fromEntityListToPermissionDtoList")
     @BeanMapping(ignoreByDefault = true)

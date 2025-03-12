@@ -1,6 +1,7 @@
 package com.master.model.criteria;
 
 import com.master.constant.MasterConstant;
+import com.master.model.Branch;
 import com.master.model.Customer;
 import lombok.Data;
 import org.springframework.data.jpa.domain.Specification;
@@ -14,11 +15,13 @@ import java.util.List;
 @Data
 public class CustomerCriteria implements Serializable {
     private Long id;
-    private String name;
     private Long accountId;
+    private String address;
+    private String city;
+    private Long branchId;
     private Integer status;
     private Integer sortDate;
-    private Integer isPaged = MasterConstant.IS_PAGED_TRUE;
+    private Integer isPaged = MasterConstant.BOOLEAN_TRUE;
 
     public Specification<Customer> getCriteria() {
         return new Specification<Customer>() {
@@ -33,8 +36,15 @@ public class CustomerCriteria implements Serializable {
                 if (getStatus() != null) {
                     predicates.add(cb.equal(root.get("status"), getStatus()));
                 }
-                if (StringUtils.isNotBlank(getName())) {
-                    predicates.add(cb.like(cb.lower(root.get("name")), "%" + getName().toLowerCase() + "%"));
+                if (StringUtils.isNotBlank(getAddress())) {
+                    predicates.add(cb.like(cb.lower(root.get("address")), "%" + getAddress().toLowerCase() + "%"));
+                }
+                if (StringUtils.isNotBlank(getCity())) {
+                    predicates.add(cb.like(cb.lower(root.get("city")), "%" + getCity().toLowerCase() + "%"));
+                }
+                if (getBranchId() != null) {
+                    Join<Customer, Branch> join = root.join("branch", JoinType.INNER);
+                    predicates.add(cb.equal(join.get("id"), getBranchId()));
                 }
                 if (getAccountId() != null) {
                     predicates.add(cb.equal(root.get("account").get("id"), getAccountId()));

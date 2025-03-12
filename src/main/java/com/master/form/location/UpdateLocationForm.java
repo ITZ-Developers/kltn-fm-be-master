@@ -1,12 +1,13 @@
 package com.master.form.location;
 
-import com.master.validation.UsernameConstraint;
+import com.master.validation.StatusConstraint;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.Date;
 
 @Data
 @ApiModel
@@ -14,10 +15,6 @@ public class UpdateLocationForm {
     @NotNull(message = "id cannot be null")
     @ApiModelProperty(name = "id", required = true)
     private Long id;
-    @NotBlank(message = "tenantId cannot be null")
-    @UsernameConstraint
-    @ApiModelProperty(name = "tenantId", required = true)
-    private String tenantId;
     @NotBlank(message = "name cannot be null")
     @ApiModelProperty(name = "name", required = true)
     private String name;
@@ -25,12 +22,18 @@ public class UpdateLocationForm {
     private String address;
     @ApiModelProperty(name = "logoPath")
     private String logoPath;
-    @ApiModelProperty(name = "bannerPath")
-    private String bannerPath;
     @ApiModelProperty(name = "hotline")
     private String hotline;
     @ApiModelProperty(name = "settings")
     private String settings;
-    @ApiModelProperty(name = "language")
-    private String language;
+    @NotNull(message = "startDate cannot be null")
+    @ApiModelProperty(required = true)
+    private Date startDate;
+    @NotNull(message = "expiredDate cannot be null")
+    @ApiModelProperty(required = true)
+    private Date expiredDate;
+    private Long tagId;
+    @StatusConstraint
+    @ApiModelProperty(required = true)
+    private Integer status;
 }

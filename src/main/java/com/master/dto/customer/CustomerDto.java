@@ -1,17 +1,16 @@
 package com.master.dto.customer;
 
+import com.master.dto.ABasicAdminDto;
 import com.master.dto.account.AccountDto;
-import io.swagger.annotations.ApiModelProperty;
+import com.master.dto.branch.BranchDto;
 import lombok.Data;
 
 @Data
-public class CustomerDto {
-    @ApiModelProperty(name = "id")
-    private Long id;
-    @ApiModelProperty(name = "name")
-    private String name;
-    @ApiModelProperty(name = "account")
+public class CustomerDto extends ABasicAdminDto {
     private AccountDto account;
-    @ApiModelProperty(name = "status")
-    private Integer status;
+    private String address;
+    private String taxNumber;
+    private String zipCode;
+    private String city;
+    private BranchDto branch;
 }

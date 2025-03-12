@@ -22,10 +22,7 @@ public class DbConfigAdminDto extends ABasicAdminDto {
     private String driverClassName;
     @ApiModelProperty(name = "initialize")
     private Boolean initialize;
-    @ApiModelProperty(name = "license")
-    private String license;
     @ApiModelProperty(name = "serverProvider")
     private ServerProviderDto serverProvider;
-    @ApiModelProperty(name = "location")
     private LocationDto location;
 }

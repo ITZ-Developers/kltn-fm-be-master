@@ -17,7 +17,7 @@ public class MasterOTPService {
 
     public MasterOTPService() throws NoSuchAlgorithmException {
         secureRandom = SecureRandom.getInstance("SHA1PRNG");
-        for(int i =0; i<10;i++){
+        for (int i = 0; i < 10; i++) {
             numberRand.add(i);
         }
     }
@@ -30,27 +30,27 @@ public class MasterOTPService {
         return otp.toString();
     }
 
-    public synchronized String orderStt(Long idStore){
+    public synchronized String orderStt(Long idStore) {
         //delelete key has valule > 2hour
         Set<String> keys = storeOrderSttForCheck.keySet();
         Iterator<String> iterator = keys.iterator();
-        while(iterator.hasNext()){
+        while (iterator.hasNext()) {
             String key = iterator.next();
             Long value = storeOrderSttForCheck.get(key);
-            if((System.currentTimeMillis() - value) >= TWO_HOUR){
+            if ((System.currentTimeMillis() - value) >= TWO_HOUR) {
                 storeOrderSttForCheck.remove(key);
             }
         }
         StringBuilder builder = new StringBuilder();
         secureRandom.setSeed(idStore);
-        while(true){
+        while (true) {
             Collections.shuffle(numberRand);
-            for(int i =0; i< 4; i++){
+            for (int i = 0; i < 4; i++) {
                 builder.append(numberRand.get(secureRandom.nextInt(9)));
             }
             String stt = builder.toString();
-            if(!storeOrderSttForCheck.containsKey(stt)){
-                storeOrderSttForCheck.put(stt,System.currentTimeMillis());
+            if (!storeOrderSttForCheck.containsKey(stt)) {
+                storeOrderSttForCheck.put(stt, System.currentTimeMillis());
                 break;
             }
         }

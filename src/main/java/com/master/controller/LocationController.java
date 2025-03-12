@@ -10,11 +10,13 @@ import com.master.form.location.CreateLocationForm;
 import com.master.form.location.UpdateLocationForm;
 import com.master.mapper.LocationMapper;
 import com.master.model.Customer;
+import com.master.model.DbConfig;
 import com.master.model.Location;
+import com.master.model.ServerProvider;
 import com.master.model.criteria.LocationCriteria;
 import com.master.repository.CustomerRepository;
-import com.master.repository.DbConfigRepository;
 import com.master.repository.LocationRepository;
+import com.master.repository.ServerProviderRepository;
 import com.master.utils.TenantUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,11 +40,11 @@ public class LocationController extends ABasicController {
     @Autowired
     private LocationRepository locationRepository;
     @Autowired
-    private DbConfigRepository dbConfigRepository;
-    @Autowired
     private LocationMapper locationMapper;
     @Autowired
     private CustomerRepository customerRepository;
+    @Autowired
+    private ServerProviderRepository serverProviderRepository;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('LO_V')")
@@ -56,7 +58,7 @@ public class LocationController extends ABasicController {
 
     @GetMapping(value = "/auto-complete", produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiMessageDto<ResponseListDto<List<LocationDto>>> autoComplete(LocationCriteria locationCriteria) {
-        Pageable pageable = locationCriteria.getIsPaged().equals(MasterConstant.IS_PAGED_TRUE) ? PageRequest.of(0, 10) : PageRequest.of(0, Integer.MAX_VALUE);
+        Pageable pageable = locationCriteria.getIsPaged().equals(MasterConstant.BOOLEAN_TRUE) ? PageRequest.of(0, 10) : PageRequest.of(0, Integer.MAX_VALUE);
         locationCriteria.setStatus(MasterConstant.STATUS_ACTIVE);
         Page<Location> locations = locationRepository.findAll(locationCriteria.getCriteria(), pageable);
         ResponseListDto<List<LocationDto>> responseListDto = new ResponseListDto<>();
@@ -69,7 +71,7 @@ public class LocationController extends ABasicController {
     @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('LO_L')")
     public ApiMessageDto<ResponseListDto<List<LocationAdminDto>>> list(LocationCriteria locationCriteria, Pageable pageable) {
-        if (locationCriteria.getIsPaged().equals(MasterConstant.IS_PAGED_FALSE)) {
+        if (locationCriteria.getIsPaged().equals(MasterConstant.BOOLEAN_FALSE)) {
             pageable = PageRequest.of(0, Integer.MAX_VALUE);
         }
         Page<Location> locations = locationRepository.findAll(locationCriteria.getCriteria(), pageable);
@@ -106,9 +108,6 @@ public class LocationController extends ABasicController {
         if (location == null) {
             return makeErrorResponse(ErrorCode.LOCATION_ERROR_NOT_FOUND, "Not found location");
         }
-        if (!location.getTenantId().equals(updateLocationForm.getTenantId()) && locationRepository.findFirstByTenantId(updateLocationForm.getTenantId()).isPresent()) {
-            return makeErrorResponse(ErrorCode.LOCATION_ERROR_TENANT_ID_EXISTED, "Tenant id existed");
-        }
         if (!Objects.equals(location.getName(), updateLocationForm.getName()) && locationRepository.findFirstByCustomerIdAndName(location.getCustomer().getId(), updateLocationForm.getName()).isPresent()) {
             return makeErrorResponse(ErrorCode.LOCATION_ERROR_NAME_EXISTED, "Location name existed in this customer");
         }
@@ -124,8 +123,11 @@ public class LocationController extends ABasicController {
         if (location == null) {
             return makeErrorResponse(ErrorCode.LOCATION_ERROR_NOT_FOUND, "Not found location");
         }
-        dbConfigRepository.findFirstByLocationId(id).ifPresent(TenantUtils::deleteTenantDatabase);
-        dbConfigRepository.deleteAllByLocationId(id);
+        DbConfig dbConfig = location.getDbConfig();
+        TenantUtils.deleteTenantDatabase(dbConfig);
+        ServerProvider serverProvider = dbConfig.getServerProvider();
+        serverProvider.setCurrentTenantCount(serverProvider.getCurrentTenantCount() - 1);
+        serverProviderRepository.save(serverProvider);
         locationRepository.deleteById(id);
         return makeSuccessResponse(null, "Delete location success");
     }

@@ -7,6 +7,7 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 @Data
 @ApiModel
@@ -14,9 +15,6 @@ public class UpdateCustomerForm {
     @NotNull(message = "id cannot be null")
     @ApiModelProperty(name = "id", required = true)
     private Long id;
-    @NotBlank(message = "name cannot be null")
-    @ApiModelProperty(name = "name", required = true)
-    private String name;
     @NameConstraint
     @NotBlank(message = "fullName cannot be null")
     @ApiModelProperty(name = "fullName", required = true)
@@ -31,10 +29,10 @@ public class UpdateCustomerForm {
     @PhoneConstraint
     @ApiModelProperty(name = "phone", required = true)
     private String phone;
-    @NotNull(message = "groupId cannot be null")
-    @ApiModelProperty(name = "groupId", required = true)
-    private Long groupId;
     @ApiModelProperty(name = "status", required = true)
     @StatusConstraint
     private Integer status;
+    @Size(min = 6, message = "password must be 6 characters")
+    @PasswordConstraint(allowNull = true)
+    private String password;
 }

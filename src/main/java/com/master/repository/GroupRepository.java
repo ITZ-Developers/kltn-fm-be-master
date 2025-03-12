@@ -10,4 +10,6 @@ import java.util.Optional;
 @Repository
 public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecificationExecutor<Group> {
    Optional<Group> findFirstByName(String name);
+   Optional<Group> findFirstByKind(Integer kind);
+   Optional<Group> findFirstByIdAndKind(Long id, Integer kind);
 }

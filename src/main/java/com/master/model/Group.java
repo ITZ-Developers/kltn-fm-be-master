@@ -24,7 +24,6 @@ public class Group extends Auditable<String> {
     @Column( length = 1000)
     private String description;
     private Integer kind;
-    private Boolean isSystemRole = false;
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @JoinTable(name = "db_mst_permission_group",
             joinColumns = @JoinColumn(name = "group_id", referencedColumnName = "id"),

@@ -39,7 +39,4 @@ public class CreateServerProviderForm {
     @NotBlank(message = "mySqlRootPassword cannot be null")
     @ApiModelProperty(name = "mySqlRootPassword", required = true)
     private String mySqlRootPassword;
-    @NotBlank(message = "driverClassName cannot be null")
-    @ApiModelProperty(name = "driverClassName", required = true)
-    private String driverClassName;
 }

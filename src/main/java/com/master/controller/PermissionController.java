@@ -5,6 +5,7 @@ import com.master.model.Permission;
 import com.master.dto.ApiMessageDto;
 import com.master.dto.ErrorCode;
 import com.master.mapper.PermissionMapper;
+import com.master.model.criteria.PermissionCriteria;
 import com.master.repository.PermissionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,20 +34,16 @@ public class PermissionController extends ABasicController{
 
     @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('PER_L')")
-    public ApiMessageDto<List<Permission>> list() {
+    public ApiMessageDto<List<Permission>> list(PermissionCriteria permissionCriteria) {
         Page<Permission> permissions;
-        if (isSuperAdmin()){
-            permissions = permissionRepository.findAll(PageRequest.of(0, 1000, Sort.by(new Sort.Order(Sort.Direction.DESC, "createdDate"))));
-        } else {
-            permissions = permissionRepository.findAllByIsSystem(false, PageRequest.of(0, 1000, Sort.by(new Sort.Order(Sort.Direction.DESC, "createdDate"))));
-        }
+        permissions = permissionRepository.findAll(permissionCriteria.getCriteria(), PageRequest.of(0, Integer.MAX_VALUE, Sort.by(new Sort.Order(Sort.Direction.DESC, "createdDate"))));
         ApiMessageDto<List<Permission>> apiMessageDto = new ApiMessageDto<>();
         apiMessageDto.setData(permissions.getContent());
         apiMessageDto.setMessage("Get list permissions success");
         return apiMessageDto;
     }
 
-    @PostMapping(value = "/create", produces= MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/create", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('PER_C')")
     public ApiMessageDto<String> create(@Valid @RequestBody CreatePermissionForm createPermissionForm, BindingResult bindingResult) {
         if (permissionRepository.findFirstByName(createPermissionForm.getName()).isPresent()) {

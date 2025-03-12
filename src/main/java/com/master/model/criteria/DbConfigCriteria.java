@@ -21,10 +21,9 @@ public class DbConfigCriteria implements Serializable {
     private String driverClassName;
     private Boolean initialize;
     private Long serverProviderId;
-    private Long locationId;
     private Integer status;
     private Integer sortDate;
-    private Integer isPaged = MasterConstant.IS_PAGED_TRUE;
+    private Integer isPaged = MasterConstant.BOOLEAN_TRUE;
 
     public Specification<DbConfig> getCriteria() {
         return new Specification<DbConfig>() {
@@ -60,10 +59,6 @@ public class DbConfigCriteria implements Serializable {
                 if (getServerProviderId() != null) {
                     Join<DbConfig, ServerProvider> joinServerProvider = root.join("serverProvider", JoinType.INNER);
                     predicates.add(cb.equal(joinServerProvider.get("id"), getServerProviderId()));
-                }
-                if (getLocationId() != null) {
-                    Join<DbConfig, Location> joinLocation = root.join("location", JoinType.INNER);
-                    predicates.add(cb.equal(joinLocation.get("id"), getLocationId()));
                 }
                 if (getSortDate() != null) {
                     if (getSortDate().equals(MasterConstant.SORT_DATE_ASC)) {

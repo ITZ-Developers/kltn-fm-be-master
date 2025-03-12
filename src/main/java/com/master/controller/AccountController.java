@@ -1,13 +1,18 @@
 package com.master.controller;
 
 import com.master.constant.MasterConstant;
-import com.master.dto.account.MasterKeyDto;
-import com.master.form.account.InputKeyForm;
+import com.master.dto.ApiResponse;
+import com.master.dto.account.VerifyCredentialDto;
+import com.master.exception.BadRequestException;
 import com.master.form.account.*;
 import com.master.mapper.AccountMapper;
+import com.master.mapper.BranchMapper;
 import com.master.model.Account;
+import com.master.model.Branch;
 import com.master.repository.*;
 import com.master.service.MasterApiService;
+import com.master.service.MediaService;
+import com.master.service.TotpManager;
 import com.master.utils.*;
 import com.master.dto.ApiMessageDto;
 import com.master.dto.ErrorCode;
@@ -20,7 +25,6 @@ import com.master.model.criteria.AccountCriteria;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -34,7 +38,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
 
 @RestController
 @RequestMapping("/v1/account")
@@ -54,14 +57,15 @@ public class AccountController extends ABasicController{
     @Autowired
     private CustomerRepository customerRepository;
     @Autowired
-    @Qualifier("applicationConfig")
-    private ConcurrentMap<String, String> concurrentMap;
-    @Value("${aes.secret-key.key-information}")
-    private String keyInformationSecretKey;
-    @Value("${aes.secret-key.finance}")
-    private String financeSecretKey;
-    @Value("${aes.secret-key.decrypt-password}")
-    private String encryptPasswordSecretKey;
+    private BranchRepository branchRepository;
+    @Autowired
+    private BranchMapper branchMapper;
+    @Autowired
+    private MediaService mediaService;
+    @Value("${mfa.enabled}")
+    private Boolean isMfaEnable;
+    @Autowired
+    private TotpManager totpManager;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_V')")
@@ -70,13 +74,18 @@ public class AccountController extends ABasicController{
         if (account == null) {
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
         }
-        return makeSuccessResponse(accountMapper.fromEntityToAccountAdminDto(account), "Get account success");
+        AccountAdminDto dto = accountMapper.fromEntityToAccountAdminDto(account);
+        List<Branch> branches = branchRepository.findAllByAccountId(account.getId());
+        if (!branches.isEmpty()) {
+            dto.setBranches(branchMapper.fromEntityListToBranchDtoListAutoComplete(branches));
+        }
+        return makeSuccessResponse(dto, "Get account success");
     }
 
     @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_L')")
     public ApiMessageDto<ResponseListDto<List<AccountAdminDto>>> list(AccountCriteria accountCriteria, Pageable pageable) {
-        if (accountCriteria.getIsPaged().equals(MasterConstant.IS_PAGED_FALSE)){
+        if (accountCriteria.getIsPaged().equals(MasterConstant.BOOLEAN_FALSE)){
             pageable = PageRequest.of(0, Integer.MAX_VALUE);
         }
         Page<Account> accounts = accountRepository.findAll(accountCriteria.getCriteria(), pageable);
@@ -89,7 +98,7 @@ public class AccountController extends ABasicController{
 
     @GetMapping(value = "/auto-complete", produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiMessageDto<ResponseListDto<List<AccountDto>>> autoComplete(AccountCriteria accountCriteria) {
-        Pageable pageable = accountCriteria.getIsPaged().equals(MasterConstant.IS_PAGED_TRUE) ? PageRequest.of(0, 10) : PageRequest.of(0, Integer.MAX_VALUE);
+        Pageable pageable = accountCriteria.getIsPaged().equals(MasterConstant.BOOLEAN_TRUE) ? PageRequest.of(0, 10) : PageRequest.of(0, Integer.MAX_VALUE);
         accountCriteria.setStatus(MasterConstant.STATUS_ACTIVE);
         Page<Account> accounts = accountRepository.findAll(accountCriteria.getCriteria(), pageable);
         ResponseListDto<List<AccountDto>> responseListObj = new ResponseListDto<>();
@@ -114,15 +123,12 @@ public class AccountController extends ABasicController{
         if (accountByPhone != null){
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_PHONE_EXISTED, "Phone existed");
         }
-        Group group = groupRepository.findById(createAccountAdminForm.getGroupId()).orElse(null);
-        if (group == null) {
-            return makeErrorResponse(ErrorCode.GROUP_ERROR_NOT_FOUND, "Not found group");
-        }
         Account account = accountMapper.fromCreateAccountAdminFormToEntity(createAccountAdminForm);
         account.setPassword(passwordEncoder.encode(createAccountAdminForm.getPassword()));
         account.setKind(MasterConstant.USER_KIND_ADMIN);
-        if (!account.getKind().equals(group.getKind())) {
-            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_KIND_NOT_MATCH, "Account kind does not match group kind");
+        Group group = groupRepository.findFirstByIdAndKind(createAccountAdminForm.getGroupId(), MasterConstant.USER_KIND_ADMIN).orElse(null);
+        if (group == null) {
+            throw new BadRequestException(ErrorCode.GROUP_ERROR_NOT_FOUND, "Group not found");
         }
         account.setGroup(group);
         accountRepository.save(account);
@@ -148,21 +154,21 @@ public class AccountController extends ABasicController{
                 return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_PHONE_EXISTED, "Phone existed");
             }
         }
-        Group group = groupRepository.findById(updateAccountAdminForm.getGroupId()).orElse(null);
-        if (group == null) {
-            return makeErrorResponse(ErrorCode.GROUP_ERROR_NOT_FOUND, "Not found group");
-        }
         if (StringUtils.isNoneBlank(updateAccountAdminForm.getAvatarPath())) {
-            if(!updateAccountAdminForm.getAvatarPath().equals(account.getAvatarPath())){
-                masterApiService.deleteFile(account.getAvatarPath());
+            if (!updateAccountAdminForm.getAvatarPath().equals(account.getAvatarPath())) {
+                mediaService.deleteFile(account.getAvatarPath());
             }
             account.setAvatarPath(updateAccountAdminForm.getAvatarPath());
         }
-        if (!account.getKind().equals(group.getKind())) {
-            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_KIND_NOT_MATCH, "Account kind does not match group kind");
-        }
         accountMapper.fromUpdateAccountAdminFormToEntity(updateAccountAdminForm, account);
+        Group group = groupRepository.findFirstByIdAndKind(updateAccountAdminForm.getGroupId(), MasterConstant.USER_KIND_ADMIN).orElse(null);
+        if (group == null) {
+            throw new BadRequestException(ErrorCode.GROUP_ERROR_NOT_FOUND, "Group not found");
+        }
         account.setGroup(group);
+        if (StringUtils.isNotBlank(updateAccountAdminForm.getPassword())) {
+            account.setPassword(passwordEncoder.encode(updateAccountAdminForm.getPassword()));
+        }
         accountRepository.save(account);
         return makeSuccessResponse(null, "Update account admin success");
     }
@@ -180,7 +186,7 @@ public class AccountController extends ABasicController{
         if (Long.valueOf(getCurrentUser()).equals(account.getId())){
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_ALLOW_DELETE_YOURSELF, "Not allow to delete yourself");
         }
-        masterApiService.deleteFile(account.getAvatarPath());
+        mediaService.deleteFile(account.getAvatarPath());
         customerRepository.deleteAllByAccountId(id);
         accountRepository.deleteById(id);
         return makeSuccessResponse(null, "Delete account success");
@@ -205,9 +211,8 @@ public class AccountController extends ABasicController{
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_WRONG_PASSWORD, "Old password is incorrect");
         }
         if (StringUtils.isNoneBlank(updateProfileAdminForm.getAvatarPath())) {
-            if(!updateProfileAdminForm.getAvatarPath().equals(account.getAvatarPath())){
-                //delete old image
-                masterApiService.deleteFile(account.getAvatarPath());
+            if (!updateProfileAdminForm.getAvatarPath().equals(account.getAvatarPath())) {
+                mediaService.deleteFile(account.getAvatarPath());
             }
             account.setAvatarPath(updateProfileAdminForm.getAvatarPath());
         }
@@ -279,34 +284,38 @@ public class AccountController extends ABasicController{
         return makeSuccessResponse(null, "Change profile password success");
     }
 
-    @PostMapping(value = "/input-key", produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasRole('ACC_I_K')")
-    public ApiMessageDto<String> inputMasterKey(@Valid @RequestBody InputKeyForm inputKeyForm, BindingResult bindingResult){
-        String decryptFinanceSecretKey= RSAUtils.decrypt(inputKeyForm.getPrivateKey(), financeSecretKey);
-        String decryptKeyInformationSecretKey = RSAUtils.decrypt(inputKeyForm.getPrivateKey(), keyInformationSecretKey);
-        String decryptPasswordSecretKey = RSAUtils.decrypt(inputKeyForm.getPrivateKey(), encryptPasswordSecretKey);
-        if (decryptFinanceSecretKey == null || decryptKeyInformationSecretKey == null || decryptPasswordSecretKey == null){
-            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_PRIVATE_KEY_INVALID, "Private key invalid");
+    @PutMapping(value = "/reset-mfa", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ACC_R_MFA')")
+    public ApiMessageDto<String> resetMfa(@Valid @RequestBody UpdateMfaForm updateMfaForm, BindingResult bindingResult) {
+        if (!isSuperAdmin()) {
+            throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_NOT_ALLOW_DISABLE_2FA, "[Account] Only super admin can disable MFA");
         }
-        concurrentMap.put(MasterConstant.MASTER_PRIVATE_KEY, inputKeyForm.getPrivateKey());
-        return makeSuccessResponse(null, "Input key success");
+        Account account = accountRepository.findById(updateMfaForm.getId()).orElseThrow(() -> new BadRequestException(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "[Account] Account not found"));
+        account.setSecretKey(null);
+        account.setIsMfa(false);
+        accountRepository.save(account);
+        return makeSuccessResponse(null, "Reset MFA success");
     }
 
-    @GetMapping(value = "/clear-key", produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasRole('ACC_C_K')")
-    public ApiMessageDto<String> clearMasterKey() {
-        concurrentMap.clear();
-        return makeSuccessResponse(null, "Clear key success");
-    }
-
-    @GetMapping(value = "/get-key", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ApiMessageDto<MasterKeyDto> getMasterKey() {
-        String privateKey = concurrentMap.get(MasterConstant.MASTER_PRIVATE_KEY);
-        if (StringUtils.isBlank(privateKey)) {
-            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_PRIVATE_KEY_INVALID, "Private key not found");
+    @PostMapping(value = "/verify-credential", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ApiResponse<VerifyCredentialDto> verifyCredential(@Valid @RequestBody VerifyCredentialForm verifyCredentialForm, BindingResult bindingResult) {
+        ApiResponse<VerifyCredentialDto> apiMessageDto = new ApiResponse<>();
+        Account account = accountRepository.findFirstByUsername(verifyCredentialForm.getUsername()).orElse(null);
+        if (account == null || !passwordEncoder.matches(verifyCredentialForm.getPassword(), account.getPassword())) {
+            throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_WRONG_CREDENTIAL, "[Account] Username or password is wrong!");
         }
-        MasterKeyDto masterKeyDto = new MasterKeyDto();
-        masterKeyDto.setPrivateKey(privateKey);
-        return makeSuccessResponse(masterKeyDto, "Get key success");
+        VerifyCredentialDto verifyCredentialDto = new VerifyCredentialDto();
+        verifyCredentialDto.setIsMfaEnable(isMfaEnable);
+        verifyCredentialDto.setIsMfa(account.getIsMfa());
+        if (!account.getIsMfa() && isMfaEnable) {
+            String secret = totpManager.generateSecret();
+            String label = account.getUsername() != null ? account.getUsername() : account.getPhone();
+            String qrCodeUrl = totpManager.getUriForImage(secret, label);
+            verifyCredentialDto.setQrUrl(qrCodeUrl);
+            account.setSecretKey(secret);
+            accountRepository.save(account);
+        }
+        apiMessageDto.setData(verifyCredentialDto);
+        return apiMessageDto;
     }
 }

@@ -11,4 +11,5 @@ public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSp
     @Transactional
     void deleteAllByAccountId(Long accountId);
     Optional<Customer> findFirstByAccountId(Long accountId);
+    Boolean existsByBranchId(Long id);
 }

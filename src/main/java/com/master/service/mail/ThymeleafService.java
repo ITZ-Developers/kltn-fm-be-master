@@ -13,18 +13,17 @@ import java.util.Map;
 
 @Service
 public class ThymeleafService {
-
     private static final String MAIL_TEMPLATE_BASE_NAME = "mail/MailMessage";
-    private static final String MAIL_TEMPLATE_PREFIX ="/templates/";
-    private static final String MAIL_TEMPLATE_SUFFIX =".html";
+    private static final String MAIL_TEMPLATE_PREFIX = "/templates/";
+    private static final String MAIL_TEMPLATE_SUFFIX = ".html";
     private static final String UTF_8 = "UTF-8";
     private static final TemplateEngine templateEngine;
     static {
         templateEngine = emailTemplateEngine();
     }
-    private static TemplateEngine emailTemplateEngine(){
-        final SpringTemplateEngine templateEngine = new SpringTemplateEngine();
 
+    private static TemplateEngine emailTemplateEngine() {
+        final SpringTemplateEngine templateEngine = new SpringTemplateEngine();
         templateEngine.setTemplateResolver(htmlTemplateResolver());
         templateEngine.setTemplateEngineMessageSource(emailMessageSource());
         return templateEngine;
@@ -37,9 +36,9 @@ public class ThymeleafService {
         templateResolver.setTemplateMode(TemplateMode.HTML);
         templateResolver.setCharacterEncoding(UTF_8);
         templateResolver.setCacheable(false);
-
         return templateResolver;
     }
+
     private static ResourceBundleMessageSource emailMessageSource() {
         final ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
         messageSource.setBasename(MAIL_TEMPLATE_BASE_NAME);

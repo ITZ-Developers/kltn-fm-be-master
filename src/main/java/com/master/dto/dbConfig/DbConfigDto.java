@@ -1,6 +1,5 @@
 package com.master.dto.dbConfig;
 
-import com.master.dto.location.LocationDto;
 import com.master.dto.serverProvider.ServerProviderDto;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -23,10 +22,6 @@ public class DbConfigDto {
     private String driverClassName;
     @ApiModelProperty(name = "initialize")
     private Boolean initialize;
-    @ApiModelProperty(name = "license")
-    private String license;
     @ApiModelProperty(name = "serverProvider")
     private ServerProviderDto serverProvider;
-    @ApiModelProperty(name = "location")
-    private LocationDto location;
 }

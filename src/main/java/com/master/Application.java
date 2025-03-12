@@ -21,7 +21,6 @@ import java.util.TimeZone;
 @EnableFeignClients
 @EnableScheduling
 @EnableAspectJAutoProxy
-//@EnableEurekaClient
 public class Application {
     @Bean
     public AuditorAware<String> auditorAware() {
@@ -31,7 +30,7 @@ public class Application {
     @PostConstruct
     public void init() {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-        System.out.println("Spring boot application running in UTC timezone :" + new Date());
+        System.out.println("Spring boot application running in UTC timezone: " + new Date());
     }
 
     public static void main(String[] args) {

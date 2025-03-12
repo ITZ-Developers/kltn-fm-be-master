@@ -1,29 +1,24 @@
 package com.master.dto.location;
 
+import com.master.dto.ABasicAdminDto;
 import com.master.dto.customer.CustomerDto;
-import io.swagger.annotations.ApiModelProperty;
+import com.master.dto.dbConfig.DbConfigDto;
+import com.master.dto.tag.TagDto;
 import lombok.Data;
 
+import java.util.Date;
+
 @Data
-public class LocationDto {
-    @ApiModelProperty(name = "id")
-    private Long id;
-    @ApiModelProperty(name = "tenantId")
+public class LocationDto extends ABasicAdminDto {
     private String tenantId;
-    @ApiModelProperty(name = "name")
     private String name;
-    @ApiModelProperty(name = "address")
-    private String address;
-    @ApiModelProperty(name = "logoPath")
     private String logoPath;
-    @ApiModelProperty(name = "bannerPath")
-    private String bannerPath;
-    @ApiModelProperty(name = "hotline")
     private String hotline;
-    @ApiModelProperty(name = "settings")
     private String settings;
-    @ApiModelProperty(name = "language")
-    private String language;
-    @ApiModelProperty(name = "customer")
     private CustomerDto customer;
+    private Date startDate;
+    private Date expiredDate;
+    private String aesSecretKey;
+    private TagDto tag;
+    private DbConfigDto dbConfig;
 }

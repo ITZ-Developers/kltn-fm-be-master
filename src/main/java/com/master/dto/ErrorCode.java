@@ -1,6 +1,17 @@
 package com.master.dto;
 
 public class ErrorCode {
+    /**
+     * Starting error code General
+     */
+    public static final String GENERAL_ERROR_INVALID_USERNAME_OR_PASSWORD = "ERROR-GENERAL-0000";
+    public static final String GENERAL_ERROR_INVALID_TOKEN = "ERROR-GENERAL-0001";
+    public static final String GENERAL_ERROR_INTERNAL_SERVER = "ERROR-GENERAL-0002";
+    public static final String GENERAL_ERROR_INVALID_LOGIN_BY_EMPLOYEE = "ERROR-GENERAL-0003";
+    public static final String GENERAL_ERROR_TOTP_REQUIRED = "ERROR-GENERAL-0004";
+    public static final String GENERAL_ERROR_ACCOUNT_NOT_SET_UP_2FA = "ERROR-GENERAL-0005";
+    public static final String GENERAL_ERROR_VERIFY_TOTP_FAILED = "ERROR-GENERAL-0006";
+    public static final String GENERAL_ERROR_LOCATION_DOES_NOT_HAVE_DB_CONFIG = "ERROR-GENERAL-0007";
 
     /**
      * Starting error code Account
@@ -21,6 +32,9 @@ public class ErrorCode {
     public static final String ACCOUNT_ERROR_NOT_ALLOW_DELETE_YOURSELF = "ERROR-ACCOUNT-0012";
     public static final String ACCOUNT_ERROR_NOT_ALLOW_REQUEST_KEY = "ERROR-ACCOUNT-0013";
     public static final String ACCOUNT_ERROR_KIND_NOT_MATCH = "ERROR-ACCOUNT-0014";
+    public static final String ACCOUNT_ERROR_NOT_ALLOW_DISABLE_2FA = "ERROR-ACCOUNT-0015";
+    public static final String ACCOUNT_ERROR_WRONG_CREDENTIAL = "ERROR-ACCOUNT-0016";
+    public static final String ACCOUNT_ERROR_NEW_PASSWORD_SAME_OLD_PASSWORD = "ERROR-ACCOUNT-0017";
 
     /**
      * Starting error code Group
@@ -36,12 +50,6 @@ public class ErrorCode {
      */
     public static final String PERMISSION_ERROR_NAME_EXISTED = "ERROR-PERMISSION-0000";
     public static final String PERMISSION_ERROR_PERMISSION_CODE_EXISTED = "ERROR-PERMISSION-0001";
-
-    /**
-     * Starting error code Setting
-     */
-    public static final String SETTING_ERROR_NOT_FOUND = "ERROR-SETTING-0000";
-    public static final String SETTING_ERROR_EXISTED_GROUP_NAME_AND_KEY_NAME = "ERROR-SETTING-0001";
 
     /**
      * Starting error code Server Provider
@@ -67,6 +75,7 @@ public class ErrorCode {
      */
     public static final String CUSTOMER_ERROR_NOT_FOUND = "ERROR-CUSTOMER-0000";
     public static final String CUSTOMER_ERROR_NOT_ALLOW_DELETE = "ERROR-CUSTOMER-0001";
+    public static final String CUSTOMER_ERROR_NOT_ACTIVE = "ERROR-CUSTOMER-0002";
 
     /**
      * Starting error code Location
@@ -74,4 +83,23 @@ public class ErrorCode {
     public static final String LOCATION_ERROR_NOT_FOUND = "ERROR-LOCATION-0000";
     public static final String LOCATION_ERROR_TENANT_ID_EXISTED = "ERROR-LOCATION-0001";
     public static final String LOCATION_ERROR_NAME_EXISTED = "ERROR-LOCATION-0002";
+    public static final String LOCATION_ERROR_NOT_ACTIVE = "ERROR-LOCATION-0003";
+    public static final String LOCATION_ERROR_EXPIRED = "ERROR-LOCATION-0004";
+
+    /**
+     * Starting error code Branch
+     */
+    public static final String BRANCH_ERROR_NOT_FOUND = "ERROR-BRANCH-0000";
+    public static final String BRANCH_ERROR_CUSTOMER_EXISTED = "ERROR-BRANCH-0001";
+
+    /**
+     * Starting error code Tag
+     */
+    public static final String TAG_ERROR_NOT_FOUND = "ERROR-TAG-0000";
+    public static final String TAG_ERROR_COLOR_EXISTED = "ERROR-TAG-0001";
+
+    /**
+     * Starting error code Account Branch
+     */
+    public static final String ACCOUNT_BRANCH_ERROR_NOT_FOUND = "ERROR-ACCOUNT-BRANCH-0000";
 }

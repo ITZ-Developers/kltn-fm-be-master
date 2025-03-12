@@ -12,5 +12,5 @@ public interface AccountRepository extends JpaRepository<Account, Long>, JpaSpec
     Optional<Account> findFirstByUsername(String username);
     Optional<Account> findFirstByEmail(String email);
     Optional<Account> findFirstByPhone(String phone);
-    boolean existsByGroupId(Long groupId);
+    boolean existsByEmail(String email);
 }

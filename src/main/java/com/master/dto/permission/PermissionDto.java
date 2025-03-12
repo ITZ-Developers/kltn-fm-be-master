@@ -15,6 +15,5 @@ public class PermissionDto {
     private String nameGroup;
     @ApiModelProperty(name = "permissionCode")
     private String permissionCode;
-    @ApiModelProperty(name = "isSystem")
-    private Boolean isSystem;
+    private Integer kind;
 }

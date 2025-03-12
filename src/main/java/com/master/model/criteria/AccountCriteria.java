@@ -22,8 +22,8 @@ public class AccountCriteria implements Serializable {
     private Integer status;
     private Long groupId;
     private Integer sortDate;
-    private Integer isPaged = MasterConstant.IS_PAGED_TRUE; // 0: false, 1: true
-    private Integer ignoreCustomer = MasterConstant.IGNORE_ENTITY_RELATIONSHIP_FALSE;
+    private Integer isPaged = MasterConstant.BOOLEAN_TRUE; // 0: false, 1: true
+    private Integer ignoreCustomer = MasterConstant.BOOLEAN_FALSE;
 
     public Specification<Account> getCriteria() {
         return new Specification<Account>() {
@@ -57,7 +57,7 @@ public class AccountCriteria implements Serializable {
                     Join<Account, Group> joinGroup = root.join("group", JoinType.INNER);
                     predicates.add(cb.equal(joinGroup.get("id"), getGroupId()));
                 }
-                if (MasterConstant.IGNORE_ENTITY_RELATIONSHIP_TRUE.equals(getIgnoreCustomer())) {
+                if (MasterConstant.BOOLEAN_TRUE.equals(getIgnoreCustomer())) {
                     Subquery<Long> subquery = query.subquery(Long.class);
                     Root<Customer> subRoot = subquery.from(Customer.class);
                     subquery.select(subRoot.get("account").get("id"));

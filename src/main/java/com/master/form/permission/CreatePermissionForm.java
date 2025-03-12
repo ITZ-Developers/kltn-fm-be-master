@@ -1,5 +1,6 @@
 package com.master.form.permission;
 
+import com.master.validation.PermissionKind;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -28,7 +29,7 @@ public class CreatePermissionForm {
     @NotBlank(message = "permissionCode cannot be null")
     @ApiModelProperty(name = "permissionCode", required = true)
     private String permissionCode;
-    @NotNull(message = "isSystem cannot be null")
-    @ApiModelProperty(name = "isSystem", required = true)
-    private Boolean isSystem;
+    @PermissionKind
+    @ApiModelProperty(required = true)
+    private Integer kind;
 }

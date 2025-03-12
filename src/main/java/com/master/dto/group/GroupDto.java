@@ -16,8 +16,6 @@ public class GroupDto {
     private Integer kind;
     @ApiModelProperty(name = "description")
     private String description;
-    @ApiModelProperty(name = "isSystemRole")
-    private Boolean isSystemRole;
     @ApiModelProperty(name = "permissions")
     private List<PermissionDto> permissions ;
 }

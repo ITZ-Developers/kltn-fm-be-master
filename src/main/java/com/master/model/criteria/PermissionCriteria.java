@@ -15,6 +15,7 @@ public class PermissionCriteria {
     private String name;
     private String nameGroup;
     private Integer status;
+    private Integer kind;
 
     public Specification<Permission> getCriteria() {
         return new Specification<Permission>() {
@@ -34,6 +35,9 @@ public class PermissionCriteria {
                 }
                 if (getStatus() != null) {
                     predicates.add(cb.equal(root.get("status"), getStatus()));
+                }
+                if (getKind() != null) {
+                    predicates.add(cb.equal(root.get("kind"), getKind()));
                 }
                 return cb.and(predicates.toArray(new Predicate[predicates.size()]));
             }

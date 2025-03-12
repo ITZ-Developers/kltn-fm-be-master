@@ -22,7 +22,7 @@ public class ServerProviderCriteria implements Serializable {
     private String mySqlRootUser;
     private Integer status;
     private Integer sortDate;
-    private Integer isPaged = MasterConstant.IS_PAGED_TRUE;
+    private Integer isPaged = MasterConstant.BOOLEAN_TRUE;
 
     public Specification<ServerProvider> getCriteria() {
         return new Specification<ServerProvider>() {

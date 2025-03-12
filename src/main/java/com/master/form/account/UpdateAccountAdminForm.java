@@ -1,16 +1,13 @@
 package com.master.form.account;
 
-import com.master.validation.EmailConstraint;
-import com.master.validation.NameConstraint;
-import com.master.validation.PhoneConstraint;
-import com.master.validation.StatusConstraint;
+import com.master.validation.*;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import java.util.Date;
+import javax.validation.constraints.Size;
 
 @Data
 @ApiModel
@@ -37,6 +34,9 @@ public class UpdateAccountAdminForm {
     @ApiModelProperty(name = "status", required = true)
     private Integer status;
     @NotNull(message = "groupId cannot be null")
-    @ApiModelProperty(name = "groupId", required = true)
+    @ApiModelProperty(required = true)
     private Long groupId;
+    @Size(min = 6, message = "password must be 6 characters")
+    @PasswordConstraint(allowNull = true)
+    private String password;
 }
