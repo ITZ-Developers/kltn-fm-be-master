@@ -11,6 +11,7 @@ import com.master.form.branch.UpdateBranchForm;
 import com.master.mapper.BranchMapper;
 import com.master.model.Branch;
 import com.master.model.criteria.BranchCriteria;
+import com.master.repository.AccountBranchRepository;
 import com.master.repository.BranchRepository;
 import com.master.repository.CustomerRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,8 @@ public class BranchController extends ABasicController {
     private BranchMapper branchMapper;
     @Autowired
     private CustomerRepository customerRepository;
+    @Autowired
+    private AccountBranchRepository accountBranchRepository;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('BR_V')")
@@ -114,6 +117,9 @@ public class BranchController extends ABasicController {
         Branch branch = branchRepository.findById(id).orElse(null);
         if (branch == null) {
             throw new BadRequestException(ErrorCode.BRANCH_ERROR_NOT_FOUND, "Not found branch");
+        }
+        if (accountBranchRepository.existsByBranchId(id)) {
+            throw new BadRequestException(ErrorCode.BRANCH_ERROR_ACCOUNT_EXISTED, "Accounts existed with this branch");
         }
         if (customerRepository.existsByBranchId(id)) {
             throw new BadRequestException(ErrorCode.BRANCH_ERROR_CUSTOMER_EXISTED, "Customers existed with this branch");

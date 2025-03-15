@@ -9,4 +9,5 @@ public interface AccountBranchRepository extends JpaRepository<AccountBranch, Lo
     @Transactional
     void deleteAllByAccountId(Long accountId);
     Boolean existsByAccountIdAndBranchId(Long accountId, Long branchId);
+    Boolean existsByBranchId(Long id);
 }

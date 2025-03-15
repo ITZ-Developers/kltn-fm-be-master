@@ -91,6 +91,7 @@ public class ErrorCode {
      */
     public static final String BRANCH_ERROR_NOT_FOUND = "ERROR-BRANCH-0000";
     public static final String BRANCH_ERROR_CUSTOMER_EXISTED = "ERROR-BRANCH-0001";
+    public static final String BRANCH_ERROR_ACCOUNT_EXISTED = "ERROR-BRANCH-0002";
 
     /**
      * Starting error code Tag
