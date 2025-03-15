@@ -8,4 +8,5 @@ import org.springframework.transaction.annotation.Transactional;
 public interface AccountBranchRepository extends JpaRepository<AccountBranch, Long>, JpaSpecificationExecutor<AccountBranch> {
     @Transactional
     void deleteAllByAccountId(Long accountId);
+    Boolean existsByAccountIdAndBranchId(Long accountId, Long branchId);
 }

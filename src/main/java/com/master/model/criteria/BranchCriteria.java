@@ -24,6 +24,7 @@ public class BranchCriteria {
     @ApiModelProperty(hidden = true)
     private Long permissionAccountId;
     private Integer isPaged = MasterConstant.BOOLEAN_TRUE;
+    private Long ignoreAccountId;
 
     public Specification<Branch> getCriteria() {
         return (root, query, cb) -> {
@@ -39,6 +40,13 @@ public class BranchCriteria {
                 Root<AccountBranch> accountBranchRoot = branchSubquery.from(AccountBranch.class);
                 branchSubquery.select(accountBranchRoot.get("branch").get("id")).where(cb.equal(accountBranchRoot.get("account").get("id"), getPermissionAccountId()));
                 predicates.add(root.get("id").in(branchSubquery));
+            }
+            if (getIgnoreAccountId() != null) {
+                Subquery<Long> subquery = query.subquery(Long.class);
+                Root<AccountBranch> subRoot = subquery.from(AccountBranch.class);
+                subquery.select(subRoot.get("branch").get("id"))
+                        .where(cb.equal(subRoot.get("account").get("id"), getIgnoreAccountId()));
+                predicates.add(cb.not(root.get("id").in(subquery)));
             }
             if (getStatus() != null) {
                 predicates.add(cb.equal(root.get("status"), getStatus()));

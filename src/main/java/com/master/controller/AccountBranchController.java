@@ -64,6 +64,9 @@ public class AccountBranchController extends ABasicController {
             throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
         }
         accountBranch.setAccount(account);
+        if (accountBranchRepository.existsByAccountIdAndBranchId(account.getId(), branch.getId())) {
+            throw new BadRequestException(ErrorCode.ACCOUNT_BRANCH_ERROR_EXISTED, "Account branch existed");
+        }
         accountBranchRepository.save(accountBranch);
         return makeSuccessResponse(null, "Create account branch success");
     }

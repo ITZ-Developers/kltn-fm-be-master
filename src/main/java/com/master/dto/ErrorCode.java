@@ -102,4 +102,5 @@ public class ErrorCode {
      * Starting error code Account Branch
      */
     public static final String ACCOUNT_BRANCH_ERROR_NOT_FOUND = "ERROR-ACCOUNT-BRANCH-0000";
+    public static final String ACCOUNT_BRANCH_ERROR_EXISTED = "ERROR-ACCOUNT-BRANCH-0001";
 }
