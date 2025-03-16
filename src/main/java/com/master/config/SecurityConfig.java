@@ -27,6 +27,8 @@ import java.util.Collections;
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Resource(name = "userService")
     private UserDetailsService userDetailsService;
+    @Autowired
+    private CustomAuthenticationProvider customAuthenticationProvider;
 
     @Override
     @Bean
@@ -36,7 +38,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     public void globalUserDetails(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userDetailsService)
+        auth.authenticationProvider(customAuthenticationProvider).userDetailsService(userDetailsService)
                 .passwordEncoder(encoder());
     }
 

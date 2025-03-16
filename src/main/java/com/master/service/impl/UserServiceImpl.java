@@ -169,8 +169,7 @@ public class UserServiceImpl implements UserDetailsService {
         if (user == null
                 || !Objects.equals(MasterConstant.STATUS_ACTIVE, user.getStatus())
                 || !passwordEncoder.matches(password, user.getPassword())) {
-            log.error("[General] Invalid username or password!");
-            throw new BadRequestException("[General] Invalid username or password!", ErrorCode.GENERAL_ERROR_INVALID_USERNAME_OR_PASSWORD);
+            throw new BadRequestException(ErrorCode.GENERAL_ERROR_INVALID_USERNAME_OR_PASSWORD, "[General] Invalid username or password!");
         }
         if (Objects.equals(user.getKind(), MasterConstant.USER_KIND_CUSTOMER)) {
 //            String tenantInfo = restaurantRepository.findTenantInfoOfCustomer(user.getId());
@@ -180,8 +179,7 @@ public class UserServiceImpl implements UserDetailsService {
 //            }
         }
         if (grantedType.equals(SecurityConstant.GRANT_TYPE_EMPLOYEE) && !Objects.equals(user.getKind(), MasterConstant.USER_KIND_EMPLOYEE)) {
-            log.error("[General] Invalid login by employee");
-            throw new BadRequestException("[General] Invalid login by employee", ErrorCode.GENERAL_ERROR_INVALID_LOGIN_BY_EMPLOYEE);
+            throw new BadRequestException(ErrorCode.GENERAL_ERROR_INVALID_LOGIN_BY_EMPLOYEE, "[General] Invalid login by employee");
         }
         boolean enabled = true;
         Set<GrantedAuthority> grantedAuthorities = getAccountPermission(user);
@@ -197,14 +195,14 @@ public class UserServiceImpl implements UserDetailsService {
 
     private void checkMFA(Account user, String totp) {
         if (totp == null) {
-            throw new BadRequestException("TOTP is required", ErrorCode.GENERAL_ERROR_TOTP_REQUIRED);
+            throw new BadRequestException(ErrorCode.GENERAL_ERROR_TOTP_REQUIRED, "TOTP is required");
         }
         if (user.getSecretKey() == null) {
-            throw new BadRequestException("Account not setup TOTP", ErrorCode.GENERAL_ERROR_ACCOUNT_NOT_SET_UP_2FA);
+            throw new BadRequestException(ErrorCode.GENERAL_ERROR_ACCOUNT_NOT_SET_UP_2FA, "Account not setup TOTP");
         }
         boolean isVerified = totpManager.verifyCode(totp, user.getSecretKey());
         if (!isVerified) {
-            throw new BadRequestException("Verify TOTP failed", ErrorCode.GENERAL_ERROR_VERIFY_TOTP_FAILED);
+            throw new BadRequestException(ErrorCode.GENERAL_ERROR_VERIFY_TOTP_FAILED, "Verify TOTP failed");
         }
     }
 
