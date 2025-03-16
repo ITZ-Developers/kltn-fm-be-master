@@ -124,10 +124,12 @@ public class LocationController extends ABasicController {
             return makeErrorResponse(ErrorCode.LOCATION_ERROR_NOT_FOUND, "Not found location");
         }
         DbConfig dbConfig = location.getDbConfig();
-        TenantUtils.deleteTenantDatabase(dbConfig);
-        ServerProvider serverProvider = dbConfig.getServerProvider();
-        serverProvider.setCurrentTenantCount(serverProvider.getCurrentTenantCount() - 1);
-        serverProviderRepository.save(serverProvider);
+        if (dbConfig != null) {
+            TenantUtils.deleteTenantDatabase(dbConfig);
+            ServerProvider serverProvider = dbConfig.getServerProvider();
+            serverProvider.setCurrentTenantCount(serverProvider.getCurrentTenantCount() - 1);
+            serverProviderRepository.save(serverProvider);
+        }
         locationRepository.deleteById(id);
         return makeSuccessResponse(null, "Delete location success");
     }
