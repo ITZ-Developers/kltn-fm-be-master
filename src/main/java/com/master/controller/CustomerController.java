@@ -14,15 +14,9 @@ import com.master.form.customer.UpdateCustomerForm;
 import com.master.form.customer.UpdateCustomerProfileForm;
 import com.master.mapper.CustomerMapper;
 import com.master.mapper.LocationMapper;
-import com.master.model.Account;
-import com.master.model.Customer;
-import com.master.model.Group;
-import com.master.model.Location;
+import com.master.model.*;
 import com.master.model.criteria.CustomerCriteria;
-import com.master.repository.AccountRepository;
-import com.master.repository.CustomerRepository;
-import com.master.repository.GroupRepository;
-import com.master.repository.LocationRepository;
+import com.master.repository.*;
 import com.master.service.MediaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -37,7 +31,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -63,6 +56,8 @@ public class CustomerController extends ABasicController {
     private MediaService mediaService;
     @Autowired
     private LocationMapper locationMapper;
+    @Autowired
+    private BranchRepository branchRepository;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('CU_V')")
@@ -89,6 +84,9 @@ public class CustomerController extends ABasicController {
     @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('CU_L')")
     public ApiMessageDto<ResponseListDto<List<CustomerAdminDto>>> list(CustomerCriteria customerCriteria, Pageable pageable) {
+        if (!isSuperAdmin()) {
+            customerCriteria.setPermissionAccountId(getCurrentUser());
+        }
         if (customerCriteria.getIsPaged().equals(MasterConstant.BOOLEAN_FALSE)) {
             pageable = PageRequest.of(0, Integer.MAX_VALUE);
         }
@@ -127,6 +125,10 @@ public class CustomerController extends ABasicController {
         if (group == null) {
             return makeErrorResponse(ErrorCode.GROUP_ERROR_NOT_FOUND, "Not found group");
         }
+        Branch branch = branchRepository.findById(createCustomerForm.getBranchId()).orElse(null);
+        if (branch == null) {
+            throw new BadRequestException(ErrorCode.BRANCH_ERROR_NOT_FOUND, "Branch not found");
+        }
         Account account = customerMapper.fromCreateCustomerFormToAccountEntity(createCustomerForm);
         account.setPassword(passwordEncoder.encode(createCustomerForm.getPassword()));
         account.setKind(MasterConstant.USER_KIND_CUSTOMER);
@@ -134,6 +136,7 @@ public class CustomerController extends ABasicController {
         accountRepository.save(account);
         Customer customer = customerMapper.fromCreateCustomerFormToEntity(createCustomerForm);
         customer.setAccount(account);
+        customer.setBranch(branch);
         customerRepository.save(customer);
         return makeSuccessResponse(null, "Create customer success");
     }

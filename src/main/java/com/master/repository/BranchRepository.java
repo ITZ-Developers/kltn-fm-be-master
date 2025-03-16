@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BranchRepository extends JpaRepository<Branch, Long>, JpaSpecificationExecutor<Branch> {
-    List<Branch> findAllByIdIn(List<Long> ids);
     @Query("SELECT b FROM AccountBranch ab JOIN ab.branch b WHERE ab.account.id = :id")
     List<Branch> findAllByAccountId(@Param("id") Long id);
     @Query("SELECT b FROM Branch b JOIN AccountBranch ab ON ab.branch.id = b.id WHERE b.id = :branchId AND ab.account.id = :accountId")

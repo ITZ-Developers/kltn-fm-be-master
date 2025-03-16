@@ -39,4 +39,7 @@ public class CreateCustomerForm {
     @ApiModelProperty(name = "status", required = true)
     @StatusConstraint
     private Integer status;
+    @NotNull(message = "branchId cannot be null")
+    @ApiModelProperty(name = "branchId", required = true)
+    private Long branchId;
 }

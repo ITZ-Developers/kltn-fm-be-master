@@ -129,6 +129,7 @@ public class DbConfigController extends ABasicController {
         dbConfig.setDriverClassName(serverProvider.getDriverClassName());
         dbConfig.setServerProvider(serverProvider);
         dbConfig.setName(location.getTenantId());
+        dbConfig.setLocation(location);
         TenantUtils.createTenantDatabase(dbConfig);
         dbConfigRepository.save(dbConfig);
         serverProvider.setCurrentTenantCount(currentTenantsCount + 1);
