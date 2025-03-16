@@ -15,6 +15,7 @@ import com.master.model.Location;
 import com.master.model.ServerProvider;
 import com.master.model.criteria.LocationCriteria;
 import com.master.repository.CustomerRepository;
+import com.master.repository.DbConfigRepository;
 import com.master.repository.LocationRepository;
 import com.master.repository.ServerProviderRepository;
 import com.master.utils.TenantUtils;
@@ -45,6 +46,8 @@ public class LocationController extends ABasicController {
     private CustomerRepository customerRepository;
     @Autowired
     private ServerProviderRepository serverProviderRepository;
+    @Autowired
+    private DbConfigRepository dbConfigRepository;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('LO_V')")
@@ -128,6 +131,7 @@ public class LocationController extends ABasicController {
             TenantUtils.deleteTenantDatabase(dbConfig);
             ServerProvider serverProvider = dbConfig.getServerProvider();
             serverProvider.setCurrentTenantCount(serverProvider.getCurrentTenantCount() - 1);
+            dbConfigRepository.deleteById(dbConfig.getId());
             serverProviderRepository.save(serverProvider);
         }
         locationRepository.deleteById(id);
