@@ -46,6 +46,7 @@ public interface DbConfigMapper {
 
     @Mapping(target = "id", source = "id")
     @Mapping(target = "name", source = "name")
+    @Mapping(target = "username", source = "username")
     @Mapping(target = "url", source = "url")
     @BeanMapping(ignoreByDefault = true)
     @Named("fromEntityToDbConfigDto")

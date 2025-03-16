@@ -11,7 +11,7 @@ import java.util.List;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE,
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-        uses = {CustomerMapper.class})
+        uses = {CustomerMapper.class, DbConfigMapper.class})
 public interface LocationMapper {
     @Mapping(source = "tenantId", target = "tenantId")
     @Mapping(source = "name", target = "name")
@@ -40,6 +40,7 @@ public interface LocationMapper {
     @Mapping(target = "hotline", source = "hotline")
     @Mapping(target = "settings", source = "settings")
     @Mapping(target = "customer", source = "customer", qualifiedByName = "fromEntityToCustomerDto")
+    @Mapping(target = "dbConfig", source = "dbConfig", qualifiedByName = "fromEntityToDbConfigDto")
     @Mapping(source = "startDate", target = "startDate")
     @Mapping(source = "expiredDate", target = "expiredDate")
     @Mapping(source = "aesSecretKey", target = "aesSecretKey")
