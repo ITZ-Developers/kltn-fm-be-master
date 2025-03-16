@@ -18,8 +18,6 @@ public class UpdateLocationForm {
     @NotBlank(message = "name cannot be null")
     @ApiModelProperty(name = "name", required = true)
     private String name;
-    @ApiModelProperty(name = "address")
-    private String address;
     @ApiModelProperty(name = "logoPath")
     private String logoPath;
     @ApiModelProperty(name = "hotline")
@@ -32,7 +30,6 @@ public class UpdateLocationForm {
     @NotNull(message = "expiredDate cannot be null")
     @ApiModelProperty(required = true)
     private Date expiredDate;
-    private Long tagId;
     @StatusConstraint
     @ApiModelProperty(required = true)
     private Integer status;

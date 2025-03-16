@@ -3,7 +3,6 @@ package com.master.dto.location;
 import com.master.dto.ABasicAdminDto;
 import com.master.dto.customer.CustomerDto;
 import com.master.dto.dbConfig.DbConfigDto;
-import com.master.dto.tag.TagDto;
 import lombok.Data;
 
 import java.util.Date;
@@ -19,6 +18,5 @@ public class LocationAdminDto extends ABasicAdminDto {
     private Date startDate;
     private Date expiredDate;
     private String aesSecretKey;
-    private TagDto tag;
     private DbConfigDto dbConfig;
 }

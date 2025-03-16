@@ -33,7 +33,6 @@ public class CreateLocationForm {
     @NotNull(message = "expiredDate cannot be null")
     @ApiModelProperty(required = true)
     private Date expiredDate;
-    private Long tagId;
     @StatusConstraint
     @ApiModelProperty(required = true)
     private Integer status;

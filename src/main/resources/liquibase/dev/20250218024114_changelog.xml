@@ -859,4 +859,26 @@
     <changeSet author="Master" id="1739846395035-14">
         <dropColumn columnName="max_Master" tableName="db_mst_server_provider"/>
     </changeSet>
+    <changeSet author="Master" id="1739846395035-15">
+        <insert tableName="db_mst_group">
+            <column name="id" valueNumeric="3"/>
+            <column name="name" value="Role Customer"/>
+            <column name="kind" valueNumeric="2"/>
+            <column name="description" value="Role for customer"/>
+            <column name="status" valueNumeric="1"/>
+            <column name="created_by" value="admin"/>
+            <column name="created_date" valueDate="2025-02-17T17:41:57"/>
+            <column name="modified_by" value="admin"/>
+            <column name="modified_date" valueDate="2025-02-18T02:30:35"/>
+        </insert>
+    </changeSet>
+    <changeSet author="Master" id="1739846395035-16">
+        <dropForeignKeyConstraint baseTableName="db_mst_location" constraintName="FKclehq1dugr79vq3oivyjqxtbk"/>
+    </changeSet>
+    <changeSet author="Master" id="1739846395035-17">
+        <dropTable tableName="db_mst_tag"/>
+    </changeSet>
+    <changeSet author="Master" id="1739846395035-18">
+        <dropColumn columnName="tag_id" tableName="db_mst_location"/>
+    </changeSet>
 </databaseChangeLog>

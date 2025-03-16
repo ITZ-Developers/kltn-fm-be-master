@@ -31,9 +31,6 @@ public class Location extends Auditable<String> {
     private Date expiredDate;
     @Column(columnDefinition = "TEXT")
     private String aesSecretKey;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tag_id")
-    private Tag tag;
     @OneToOne(mappedBy = "location", fetch = FetchType.LAZY)
     private DbConfig dbConfig;
 }

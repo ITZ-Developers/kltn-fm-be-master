@@ -4,7 +4,6 @@ import com.master.constant.MasterConstant;
 import com.master.model.Customer;
 import com.master.model.DbConfig;
 import com.master.model.Location;
-import com.master.model.Tag;
 import lombok.Data;
 import org.springframework.data.jpa.domain.Specification;
 import org.apache.commons.lang3.StringUtils;
@@ -25,7 +24,6 @@ public class LocationCriteria implements Serializable {
     private Long customerId;
     private Integer isPaged = MasterConstant.BOOLEAN_TRUE;
     private Integer ignoreDbConfig = MasterConstant.BOOLEAN_FALSE;
-    private Long tagId;
     private Long dbConfigId;
 
     public Specification<Location> getCriteria() {
@@ -70,10 +68,6 @@ public class LocationCriteria implements Serializable {
                 if (getDbConfigId() != null) {
                     Join<Location, DbConfig> joinLocation = root.join("dbConfig", JoinType.INNER);
                     predicates.add(cb.equal(joinLocation.get("id"), getDbConfigId()));
-                }
-                if (getTagId() != null) {
-                    Join<Location, Tag> join = root.join("tag", JoinType.INNER);
-                    predicates.add(cb.equal(join.get("id"), getTagId()));
                 }
                 return cb.and(predicates.toArray(new Predicate[0]));
             }

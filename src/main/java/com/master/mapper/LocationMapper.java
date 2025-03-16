@@ -11,7 +11,7 @@ import java.util.List;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE,
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-        uses = {CustomerMapper.class, TagMapper.class})
+        uses = {CustomerMapper.class})
 public interface LocationMapper {
     @Mapping(source = "tenantId", target = "tenantId")
     @Mapping(source = "name", target = "name")
@@ -27,6 +27,7 @@ public interface LocationMapper {
     @Mapping(source = "name", target = "name")
     @Mapping(source = "logoPath", target = "logoPath")
     @Mapping(source = "hotline", target = "hotline")
+    @Mapping(source = "startDate", target = "startDate")
     @Mapping(source = "expiredDate", target = "expiredDate")
     @Mapping(source = "status", target = "status")
     @BeanMapping(ignoreByDefault = true)
@@ -42,7 +43,6 @@ public interface LocationMapper {
     @Mapping(source = "startDate", target = "startDate")
     @Mapping(source = "expiredDate", target = "expiredDate")
     @Mapping(source = "aesSecretKey", target = "aesSecretKey")
-    @Mapping(source = "tag", target = "tag", qualifiedByName = "fromEntityToTagDto")
     @Mapping(target = "status", source = "status")
     @Mapping(target = "createdDate", source = "createdDate")
     @Mapping(target = "modifiedDate", source = "modifiedDate")
