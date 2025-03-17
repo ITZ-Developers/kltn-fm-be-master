@@ -881,4 +881,34 @@
     <changeSet author="Master" id="1739846395035-18">
         <dropColumn columnName="tag_id" tableName="db_mst_location"/>
     </changeSet>
+    <changeSet author="Master" id="1739846395035-19">
+        <insert tableName="db_mst_permission">
+            <column name="id" valueNumeric="8216051726351116"/>
+            <column name="name" value="Input server key"/>
+            <column name="permission_code" value="ACC_I_K"/>
+            <column name="kind" valueNumeric="1"/>
+            <column name="action" value="/v1/account/input-key"/>
+            <column name="name_group" value="Account"/>
+            <column name="show_menu" valueBoolean="true"/>
+            <column name="status" valueNumeric="1"/>
+            <column name="created_by" value="admin"/>
+            <column name="created_date" valueDate="2025-02-18T09:02:08"/>
+            <column name="modified_by" value="admin"/>
+            <column name="modified_date" valueDate="2025-02-18T09:02:12"/>
+        </insert>
+        <insert tableName="db_mst_permission">
+            <column name="id" valueNumeric="8216051726351117"/>
+            <column name="name" value="Clear server key"/>
+            <column name="permission_code" value="ACC_C_K"/>
+            <column name="kind" valueNumeric="1"/>
+            <column name="action" value="/v1/account/clear-key"/>
+            <column name="name_group" value="Account"/>
+            <column name="show_menu" valueBoolean="true"/>
+            <column name="status" valueNumeric="1"/>
+            <column name="created_by" value="admin"/>
+            <column name="created_date" valueDate="2025-02-18T09:02:08"/>
+            <column name="modified_by" value="admin"/>
+            <column name="modified_date" valueDate="2025-02-18T09:02:12"/>
+        </insert>
+    </changeSet>
 </databaseChangeLog>
