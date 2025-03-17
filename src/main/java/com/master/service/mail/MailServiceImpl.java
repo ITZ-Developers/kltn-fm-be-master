@@ -22,20 +22,22 @@ public class MailServiceImpl {
     @Value("${spring.mail.username}")
     private String email;
 
-    public void sendVerificationMail(String mail, String code) {
+    public void sendVerificationMail(String mail, String code, String fullName) {
         try {
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message,
                     MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
                     StandardCharsets.UTF_8.name());
-            helper.setFrom(email);
+            helper.setFrom("Finance <" + email + ">");
             Map<String, Object> variables = new HashMap<>();
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
             variables.put("date", sdf.format(new Date()));
             variables.put("code", code);
-            helper.setText(thymeleafService.createContent("mail-sender-test.html", variables), true);
+            variables.put("receiver", fullName);
+            String content = thymeleafService.createContent("mail-sender-test.html", variables);
+            helper.setText(content, true);
             helper.setTo(mail);
-            helper.setSubject("Verification Mail");
+            helper.setSubject("[No-Reply] Xác nhận đặt lại mật khẩu");
             javaMailSender.send(message);
         } catch (Exception e) {
             System.out.println(e.getMessage());

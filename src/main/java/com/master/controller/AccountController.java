@@ -13,6 +13,7 @@ import com.master.repository.*;
 import com.master.service.MasterApiService;
 import com.master.service.MediaService;
 import com.master.service.TotpManager;
+import com.master.service.mail.MailServiceImpl;
 import com.master.utils.*;
 import com.master.dto.ApiMessageDto;
 import com.master.dto.ErrorCode;
@@ -66,6 +67,8 @@ public class AccountController extends ABasicController{
     private Boolean isMfaEnable;
     @Autowired
     private TotpManager totpManager;
+    @Autowired
+    private MailServiceImpl mailService;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_V')")
@@ -232,7 +235,7 @@ public class AccountController extends ABasicController{
         account.setResetPwdCode(otp);
         account.setResetPwdTime(new Date());
         accountRepository.save(account);
-        masterApiService.sendEmail(account.getEmail(),"OTP: " + otp, "Request forget password successful, please check email",false);
+        mailService.sendVerificationMail(account.getEmail(), otp, account.getFullName());
         AccountForgetPasswordDto accountForgetPasswordDto = new AccountForgetPasswordDto();
         String zipUserId = ZipUtils.zipString(account.getId()+ ";" + otp);
         accountForgetPasswordDto.setUserId(zipUserId);
@@ -255,9 +258,6 @@ public class AccountController extends ABasicController{
             account.setAttemptCode(account.getAttemptCode() + 1);
             accountRepository.save(account);
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_OTP_INVALID, "OTP code invalid or has expired");
-        }
-        if (passwordEncoder.matches(resetPasswordForm.getNewPassword(), account.getPassword())) {
-            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NEW_PASSWORD_INVALID, "New password must be different from old password");
         }
         account.setResetPwdTime(null);
         account.setResetPwdCode(null);
