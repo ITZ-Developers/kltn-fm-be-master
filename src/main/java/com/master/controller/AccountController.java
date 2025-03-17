@@ -2,7 +2,7 @@ package com.master.controller;
 
 import com.master.constant.MasterConstant;
 import com.master.dto.ApiResponse;
-import com.master.dto.account.VerifyCredentialDto;
+import com.master.dto.account.*;
 import com.master.exception.BadRequestException;
 import com.master.feign.service.FeignTenantService;
 import com.master.form.account.*;
@@ -19,9 +19,6 @@ import com.master.utils.*;
 import com.master.dto.ApiMessageDto;
 import com.master.dto.ErrorCode;
 import com.master.dto.ResponseListDto;
-import com.master.dto.account.AccountAdminDto;
-import com.master.dto.account.AccountDto;
-import com.master.dto.account.AccountForgetPasswordDto;
 import com.master.model.Group;
 import com.master.model.criteria.AccountCriteria;
 import lombok.extern.slf4j.Slf4j;
@@ -330,9 +327,19 @@ public class AccountController extends ABasicController{
         return feignTenantService.inputKey(tenantApiKey, inputKeyForm);
     }
 
-    @GetMapping(value = "/clear-key", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/clear-key", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_C_K')")
-    public ApiMessageDto<String> clearMasterKey() {
+    public ApiMessageDto<String> clearMasterKey(@Valid @RequestBody ClearKeyForm form, BindingResult bindingResult) {
+        Account account = accountRepository.findById(getCurrentUser()).orElse(null);
+        if (account == null || !MasterConstant.STATUS_ACTIVE.equals(account.getStatus())) {
+            throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
+        }
+        if (!MasterConstant.USER_KIND_ADMIN.equals(account.getKind())) {
+            throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_KIND_NOT_MATCH, "Current user is not admin");
+        }
+        if (!passwordEncoder.matches(form.getPassword(), account.getPassword())) {
+            throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_PASSWORD_INVALID, "Invalid password");
+        }
         return feignTenantService.clearKey(tenantApiKey);
     }
 }
