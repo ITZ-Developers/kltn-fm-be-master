@@ -4,6 +4,7 @@ import com.master.constant.MasterConstant;
 import com.master.dto.ApiResponse;
 import com.master.dto.account.VerifyCredentialDto;
 import com.master.exception.BadRequestException;
+import com.master.feign.service.FeignTenantService;
 import com.master.form.account.*;
 import com.master.mapper.AccountMapper;
 import com.master.mapper.BranchMapper;
@@ -65,10 +66,14 @@ public class AccountController extends ABasicController{
     private MediaService mediaService;
     @Value("${mfa.enabled}")
     private Boolean isMfaEnable;
+    @Value("${tenant.api-key}")
+    private String tenantApiKey;
     @Autowired
     private TotpManager totpManager;
     @Autowired
     private MailServiceImpl mailService;
+    @Autowired
+    private FeignTenantService feignTenantService;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_V')")
@@ -317,5 +322,17 @@ public class AccountController extends ABasicController{
         }
         apiMessageDto.setData(verifyCredentialDto);
         return apiMessageDto;
+    }
+
+    @PostMapping(value = "/input-key", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ACC_I_K')")
+    public ApiMessageDto<String> inputMasterKey(@Valid @RequestBody InputKeyForm inputKeyForm, BindingResult bindingResult) {
+        return feignTenantService.inputKey(tenantApiKey, inputKeyForm);
+    }
+
+    @GetMapping(value = "/clear-key", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ACC_C_K')")
+    public ApiMessageDto<String> clearMasterKey() {
+        return feignTenantService.clearKey(tenantApiKey);
     }
 }

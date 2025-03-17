@@ -25,14 +25,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 @Configuration
 @EnableWebMvc
 public class WebMvcConfig implements WebMvcConfigurer {
     public static final String DATE_TIME_FORMAT = "dd/MM/yyyy HH:mm:ss";
-
     @Autowired
     LogInterceptor logInterceptor;
 
