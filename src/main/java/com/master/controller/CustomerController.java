@@ -18,6 +18,8 @@ import com.master.model.*;
 import com.master.model.criteria.CustomerCriteria;
 import com.master.repository.*;
 import com.master.service.MediaService;
+import com.master.service.SessionService;
+import com.master.service.impl.UserServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +60,10 @@ public class CustomerController extends ABasicController {
     private LocationMapper locationMapper;
     @Autowired
     private BranchRepository branchRepository;
+    @Autowired
+    private UserServiceImpl userService;
+    @Autowired
+    private SessionService sessionService;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('CU_V')")
@@ -66,7 +72,9 @@ public class CustomerController extends ABasicController {
         if (customer == null) {
             return makeErrorResponse(ErrorCode.CUSTOMER_ERROR_NOT_FOUND, "Not found customer");
         }
-        return makeSuccessResponse(customerMapper.fromEntityToCustomerAdminDto(customer), "Get customer success");
+        CustomerAdminDto dto = customerMapper.fromEntityToCustomerAdminDto(customer);
+        sessionService.mappingLastLoginForCustomer(dto);
+        return makeSuccessResponse(dto, "Get customer success");
     }
 
     @GetMapping(value = "/auto-complete", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -92,7 +100,9 @@ public class CustomerController extends ABasicController {
         }
         Page<Customer> customers = customerRepository.findAll(customerCriteria.getCriteria(), pageable);
         ResponseListDto<List<CustomerAdminDto>> responseListDto = new ResponseListDto<>();
-        responseListDto.setContent(customerMapper.fromEntityListToCustomerAdminDtoList(customers.getContent()));
+        List<CustomerAdminDto> dtos = customerMapper.fromEntityListToCustomerAdminDtoList(customers.getContent());
+        sessionService.mappingLastLoginForListCustomers(dtos);
+        responseListDto.setContent(dtos);
         responseListDto.setTotalPages(customers.getTotalPages());
         responseListDto.setTotalElements(customers.getTotalElements());
         return makeSuccessResponse(responseListDto, "Get list customer success");
@@ -159,6 +169,7 @@ public class CustomerController extends ABasicController {
             mediaService.deleteFile(account.getAvatarPath());
             account.setAvatarPath(updateCustomerForm.getAvatarPath());
         }
+        boolean isLock = MasterConstant.STATUS_ACTIVE.equals(account.getStatus()) && !MasterConstant.STATUS_ACTIVE.equals(updateCustomerForm.getStatus());
         customerMapper.fromUpdateCustomerFormToAccountEntity(updateCustomerForm, account);
         if (StringUtils.isNotBlank(updateCustomerForm.getPassword())) {
             account.setPassword(passwordEncoder.encode(updateCustomerForm.getPassword()));
@@ -171,6 +182,9 @@ public class CustomerController extends ABasicController {
         customerMapper.fromUpdateCustomerFormToEntity(updateCustomerForm, customer);
         customer.setAccount(account);
         customerRepository.save(customer);
+        if (isLock) {
+            sessionService.sendMessageLockAccount(account.getUsername(), account.getKind(), null);
+        }
         return makeSuccessResponse(null, "Update customer success");
     }
 
@@ -185,18 +199,20 @@ public class CustomerController extends ABasicController {
             return makeErrorResponse(ErrorCode.CUSTOMER_ERROR_NOT_ALLOW_DELETE, "Not allowed to delete customer");
         }
         customerRepository.deleteById(id);
+        if (MasterConstant.STATUS_ACTIVE.equals(customer.getStatus())) {
+            sessionService.sendMessageLockAccount(customer.getAccount().getUsername(), customer.getAccount().getKind(), null);
+        }
         return makeSuccessResponse(null, "Delete customer success");
     }
 
     @GetMapping(value = "/my-location", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ApiMessageDto<ResponseListDto<List<LocationDto>>> myLocations() {
-        List<Location> locations = locationRepository.findAllByCustomerIdAndCustomerStatusAndDbConfigIdIsNotNullAndStatusAndExpiredDateAfter(getCurrentUser(), MasterConstant.STATUS_ACTIVE, MasterConstant.STATUS_ACTIVE, new Date());
-        if (locations.isEmpty()) {
-            throw new UnauthorizationException("Customer has no available restaurants");
+    public ApiMessageDto<LocationDto> myLocations() {
+        Location location = locationRepository.findFirstByTenantIdAndCustomerStatusAndDbConfigIdIsNotNullAndStatusAndExpiredDateAfter(getCurrentTenantName(), MasterConstant.STATUS_ACTIVE, MasterConstant.STATUS_ACTIVE, new Date()).orElse(null);
+        if (location == null) {
+            throw new UnauthorizationException("This location is inaccessible");
         }
-        ResponseListDto<List<LocationDto>> responseListDto = new ResponseListDto<>();
-        responseListDto.setContent(locationMapper.fromEntityListToLocationDtoList(locations));
-        return makeSuccessResponse(responseListDto, "List my locations success");
+        userService.checkValidLocation(location);
+        return makeSuccessResponse(locationMapper.fromEntityToLocationDto(location), "Get my location success");
     }
 
     @PutMapping(value = "/update-profile", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -215,9 +231,6 @@ public class CustomerController extends ABasicController {
                 throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_NEW_PASSWORD_SAME_OLD_PASSWORD, "[Customer] New password must be different from old password");
             }
             customer.getAccount().setPassword(passwordEncoder.encode(form.getNewPassword()));
-        }
-        if (StringUtils.isNotBlank(form.getEmail()) && !Objects.equals(customer.getAccount().getEmail(), form.getEmail()) && accountRepository.existsByEmail(form.getEmail())) {
-            throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_EMAIL_EXISTED, "[Customer] Email existed");
         }
         String avatarPath = customer.getAccount().getAvatarPath();
         if (!Objects.equals(form.getAvatarPath(), avatarPath)) {

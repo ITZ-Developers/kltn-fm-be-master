@@ -83,6 +83,7 @@ public interface AccountMapper {
     @Mapping(source = "avatarPath", target = "avatarPath")
     @Mapping(source = "group", target = "group", qualifiedByName = "fromEntityToGroupDtoForAccount")
     @Mapping(source = "status", target = "status")
+    @Mapping(source = "lastLogin", target = "lastLogin")
     @BeanMapping(ignoreByDefault = true)
     @Named("fromEntityToAccountDto")
     AccountDto fromEntityToAccountDto(Account account);

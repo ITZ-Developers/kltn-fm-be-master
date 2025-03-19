@@ -1,6 +1,7 @@
 package com.master.mapper;
 
 import com.master.form.location.CreateLocationForm;
+import com.master.form.location.UpdateLocationByCustomer;
 import com.master.form.location.UpdateLocationForm;
 import com.master.model.Location;
 import com.master.dto.location.LocationAdminDto;
@@ -23,7 +24,6 @@ public interface LocationMapper {
     @BeanMapping(ignoreByDefault = true)
     Location fromCreateLocationFormToEntity(CreateLocationForm createLocationForm);
 
-    @Mapping(target = "id", source = "id")
     @Mapping(source = "name", target = "name")
     @Mapping(source = "logoPath", target = "logoPath")
     @Mapping(source = "hotline", target = "hotline")
@@ -32,6 +32,12 @@ public interface LocationMapper {
     @Mapping(source = "status", target = "status")
     @BeanMapping(ignoreByDefault = true)
     void fromUpdateLocationFormToEntity(UpdateLocationForm updateLocationForm, @MappingTarget Location location);
+
+    @Mapping(source = "name", target = "name")
+    @Mapping(source = "logoPath", target = "logoPath")
+    @Mapping(source = "hotline", target = "hotline")
+    @BeanMapping(ignoreByDefault = true)
+    void fromUpdateLocationFormByCustomerToEntity(UpdateLocationByCustomer updateLocationForm, @MappingTarget Location location);
 
     @Mapping(target = "id", source = "id")
     @Mapping(target = "tenantId", source = "tenantId")

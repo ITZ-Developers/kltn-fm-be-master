@@ -18,8 +18,9 @@ public class PermissionKindValidation implements ConstraintValidator<PermissionK
     @Override
     public boolean isValid(Integer value, ConstraintValidatorContext context) {
         return value == null ? allowNull : List.of(
-                MasterConstant.PERMISSION_KIND_SYSTEM,
-                MasterConstant.PERMISSION_KIND_EMPLOYEE
+                MasterConstant.USER_KIND_ADMIN,
+                MasterConstant.USER_KIND_CUSTOMER,
+                MasterConstant.USER_KIND_EMPLOYEE
         ).contains(value);
     }
 }

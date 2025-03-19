@@ -3,6 +3,7 @@ package com.master.repository;
 import com.master.model.Location;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Date;
 import java.util.List;
@@ -12,5 +13,7 @@ public interface LocationRepository extends JpaRepository<Location, Long>, JpaSp
     Optional<Location> findFirstByTenantId(String tenantId);
     Optional<Location> findFirstByCustomerIdAndName(Long customerId, String name);
     boolean existsByCustomerId(Long customer);
-    List<Location> findAllByCustomerIdAndCustomerStatusAndDbConfigIdIsNotNullAndStatusAndExpiredDateAfter(Long customerId, Integer customerStatus, Integer restaurantStatus, Date currentDate);
+    Optional<Location> findFirstByTenantIdAndCustomerStatusAndDbConfigIdIsNotNullAndStatusAndExpiredDateAfter(String tenantName, Integer customerStatus, Integer restaurantStatus, Date currentDate);
+    @Query("SELECT DISTINCT l.tenantId FROM Location l")
+    List<String> findAllDistinctTenantId();
 }

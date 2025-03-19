@@ -36,4 +36,5 @@ public class AccountDto {
     private String secretKey;
     @ApiModelProperty(name = "status")
     private Integer status;
+    private Date lastLogin;
 }

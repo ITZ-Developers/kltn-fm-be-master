@@ -24,6 +24,10 @@ public class RabbitConfiguration {
     private String virtualHost;
     @Value("${rabbitmq.media.queue}")
     private String mediaQueue;
+    @Value("${rabbitmq.queue.process-tenant}")
+    private String processTenantQueue;
+    @Value("${rabbitmq.queue.notification}")
+    private String notificationQueue;
 
     @Bean
     public ConnectionFactory connectionFactory() {
@@ -43,5 +47,15 @@ public class RabbitConfiguration {
     @Bean
     public Queue mediaQueue() {
         return new Queue(mediaQueue, true);
+    }
+
+    @Bean
+    public Queue processTenantQueue() {
+        return new Queue(processTenantQueue, true);
+    }
+
+    @Bean
+    public Queue notificationQueue() {
+        return new Queue(notificationQueue, true);
     }
 }

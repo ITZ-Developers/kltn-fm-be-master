@@ -1,6 +1,9 @@
 package com.master.constant;
 
 public class MasterConstant {
+    public static final String BACKEND_APP = "BACKEND_APP";
+    public static final String APP_MASTER = "MASTER";
+    public static final String APP_TENANT = "TENANT";
     public static final String DATE_FORMAT = "dd/MM/yyyy";
     public static final String DATE_TIME_FORMAT = "dd/MM/yyyy HH:mm:ss";
 
@@ -37,10 +40,12 @@ public class MasterConstant {
     public static final Integer BOOLEAN_TRUE = 1;
     public static final Integer BOOLEAN_FALSE = 0;
 
-    public static final Integer PERMISSION_KIND_SYSTEM = 1;
-    public static final Integer PERMISSION_KIND_EMPLOYEE = 2;
+    public static final String CMD_LOCK_DEVICE = "CMD_LOCK_DEVICE";
+    public static final String CMD_DELETE_NOTIFICATION = "CMD_DELETE_NOTIFICATION";
+    public static final String CMD_CREATE_PAYMENT_PERIOD = "CMD_CREATE_PAYMENT_PERIOD";
+    public static final String CMD_SCHEDULE_SERVICE = "CMD_SCHEDULE_SERVICE";
 
-    private MasterConstant(){
+    private MasterConstant() {
         throw new IllegalStateException("Utility class");
     }
 }

@@ -44,6 +44,7 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
                 .antMatchers("/v1/setting/find-by-key", "/v1/setting/find-by-group", "/v1/setting/public").permitAll()
                 .antMatchers("/v1/db-config/get-by-name", "/v1/db-config/get-by-tenant-id").permitAll()
                 .antMatchers("/v1/account/get-key", "/v1/account/verify-credential").permitAll()
+                .antMatchers("/v1/group/employee", "/v1/account/login-employee").permitAll()
                 .antMatchers("/**").authenticated()
                 .and().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and().exceptionHandling().accessDeniedHandler(new OAuth2AccessDeniedHandler());

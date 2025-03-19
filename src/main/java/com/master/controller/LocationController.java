@@ -7,6 +7,7 @@ import com.master.dto.ResponseListDto;
 import com.master.dto.location.LocationAdminDto;
 import com.master.dto.location.LocationDto;
 import com.master.form.location.CreateLocationForm;
+import com.master.form.location.UpdateLocationByCustomer;
 import com.master.form.location.UpdateLocationForm;
 import com.master.mapper.LocationMapper;
 import com.master.model.Customer;
@@ -18,6 +19,8 @@ import com.master.repository.CustomerRepository;
 import com.master.repository.DbConfigRepository;
 import com.master.repository.LocationRepository;
 import com.master.repository.ServerProviderRepository;
+import com.master.service.SessionService;
+import com.master.service.impl.UserServiceImpl;
 import com.master.utils.TenantUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +51,10 @@ public class LocationController extends ABasicController {
     private ServerProviderRepository serverProviderRepository;
     @Autowired
     private DbConfigRepository dbConfigRepository;
+    @Autowired
+    private SessionService sessionService;
+    @Autowired
+    private UserServiceImpl userService;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('LO_V')")
@@ -114,8 +121,12 @@ public class LocationController extends ABasicController {
         if (!Objects.equals(location.getName(), updateLocationForm.getName()) && locationRepository.findFirstByCustomerIdAndName(location.getCustomer().getId(), updateLocationForm.getName()).isPresent()) {
             return makeErrorResponse(ErrorCode.LOCATION_ERROR_NAME_EXISTED, "Location name existed in this customer");
         }
+        boolean isLock = MasterConstant.STATUS_ACTIVE.equals(location.getStatus()) && !MasterConstant.STATUS_ACTIVE.equals(updateLocationForm.getStatus());
         locationMapper.fromUpdateLocationFormToEntity(updateLocationForm, location);
         locationRepository.save(location);
+        if (isLock) {
+            sessionService.sendMessageLockLocation(location);
+        }
         return makeSuccessResponse(null, "Update location success");
     }
 
@@ -135,6 +146,25 @@ public class LocationController extends ABasicController {
             serverProviderRepository.save(serverProvider);
         }
         locationRepository.deleteById(id);
+        if (MasterConstant.STATUS_ACTIVE.equals(location.getStatus())) {
+            sessionService.sendMessageLockLocation(location);
+        }
         return makeSuccessResponse(null, "Delete location success");
+    }
+
+    @PutMapping(value = "/update-by-customer", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('LO_U_B_C')")
+    public ApiMessageDto<String> update(@Valid @RequestBody UpdateLocationByCustomer updateLocationForm, BindingResult bindingResult) {
+        Location location = locationRepository.findFirstByTenantId(getCurrentTenantName()).orElse(null);
+        if (location == null) {
+            return makeErrorResponse(ErrorCode.LOCATION_ERROR_NOT_FOUND, "Not found location");
+        }
+        userService.checkValidLocation(location);
+        if (!Objects.equals(location.getName(), updateLocationForm.getName()) && locationRepository.findFirstByCustomerIdAndName(location.getCustomer().getId(), updateLocationForm.getName()).isPresent()) {
+            return makeErrorResponse(ErrorCode.LOCATION_ERROR_NAME_EXISTED, "Location name existed in this customer");
+        }
+        locationMapper.fromUpdateLocationFormByCustomerToEntity(updateLocationForm, location);
+        locationRepository.save(location);
+        return makeSuccessResponse(null, "Update location by customer success");
     }
 }

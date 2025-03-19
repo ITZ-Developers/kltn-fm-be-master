@@ -15,7 +15,6 @@ import java.util.List;
 public interface GroupMapper {
     @Mapping(source = "name", target = "name")
     @Mapping(source = "description", target = "description")
-    @Mapping(source = "kind", target = "kind")
     @BeanMapping(ignoreByDefault = true)
     Group fromCreateGroupFormToEntity(CreateGroupForm createGroupForm);
 

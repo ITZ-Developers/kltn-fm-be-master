@@ -3,10 +3,10 @@ package com.master.rabbit;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.master.rabbit.form.BaseSendMsgForm;
+import com.master.rabbit.form.ProcessTenantForm;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 @Service
 @Slf4j
@@ -16,12 +16,12 @@ public class RabbitService {
     @Autowired
     private RabbitSender rabbitSender;
 
-    public <T> void handleSendMsg(String appName, String queueName, T data, String cmd, String token) {
+    public <T> void handleSendMsg(ProcessTenantForm<T> processTenantForm) {
         BaseSendMsgForm<T> form = new BaseSendMsgForm<>();
-        form.setApp(appName);
-        form.setCmd(cmd);
-        form.setData(data);
-        form.setToken(token);
+        form.setApp(processTenantForm.getAppName());
+        form.setCmd(processTenantForm.getCmd());
+        form.setData(processTenantForm.getData());
+        form.setToken(processTenantForm.getToken());
         String msg;
         try {
             msg = objectMapper.writeValueAsString(form);
@@ -30,10 +30,10 @@ public class RabbitService {
         }
 
         // create queue if existed
-        createQueueIfNotExist(queueName);
+        createQueueIfNotExist(processTenantForm.getQueueName());
 
         // push msg
-        rabbitSender.send(queueName, msg);
+        rabbitSender.send(processTenantForm.getQueueName(), msg);
     }
 
     private void createQueueIfNotExist(String queueName) {

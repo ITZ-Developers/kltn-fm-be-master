@@ -6,13 +6,15 @@ import com.master.dto.ErrorCode;
 import com.master.exception.BadRequestException;
 import com.master.feign.FeignConstant;
 import com.master.model.Account;
+import com.master.model.Customer;
+import com.master.model.Location;
 import com.master.model.Permission;
-import com.master.repository.AccountRepository;
 import com.master.jwt.MasterJwt;
+import com.master.repository.AccountRepository;
 import com.master.repository.LocationRepository;
-import com.master.repository.PermissionRepository;
 import com.master.service.TotpManager;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -21,9 +23,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.ClientDetails;
@@ -47,8 +49,6 @@ public class UserServiceImpl implements UserDetailsService {
     public ThreadLocal<String> tenantId = new InheritableThreadLocal<>();
     @Autowired
     private AccountRepository accountRepository;
-    @Autowired
-    private PermissionRepository permissionRepository;
     @Value("${mfa.enabled}")
     private Boolean isMfaEnable;
     @Autowired
@@ -60,32 +60,8 @@ public class UserServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String userId) {
-        Account user = accountRepository.findFirstByUsername(userId).orElse(null);
-        if (user == null) {
-            log.error("Invalid username or password!");
-            throw new UsernameNotFoundException("[General] Invalid username or password!");
-        }
-        boolean enabled = true;
-        if (user.getStatus() != 1) {
-            log.error("User had been locked!");
-            enabled = false;
-        }
-        Set<GrantedAuthority> grantedAuthorities;
-        if (Boolean.FALSE.equals(isMfaEnable) || Objects.equals(user.getKind(), MasterConstant.USER_KIND_EMPLOYEE)) {
-            grantedAuthorities = getAccountPermission(user);
-        } else {
-            if (user.getIsMfa() != null && user.getIsMfa().equals(true)) {
-                grantedAuthorities = getAccountPermission(user);
-            } else {
-                grantedAuthorities = new HashSet<>();
-                List<String> basicRoles = new ArrayList<>(Arrays.asList("ACC_TOTP"));
-                if (Boolean.TRUE.equals(user.getIsSuperAdmin())) {
-                    basicRoles.add("ACC_D_MFA");
-                }
-                basicRoles.forEach(role -> grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())));
-            }
-        }
-        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), enabled, true, true, true, grantedAuthorities);
+        // Ignored
+        return null;
     }
 
     public Set<GrantedAuthority> getAccountPermission(Account user) {
@@ -97,14 +73,12 @@ public class UserServiceImpl implements UserDetailsService {
 
     public MasterJwt getAddInfoFromToken() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Long userId = null;
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
             OAuth2AuthenticationDetails oauthDetails =
                     (OAuth2AuthenticationDetails) authentication.getDetails();
             if (oauthDetails != null) {
                 Map<String, Object> map = (Map<String, Object>) oauthDetails.getDecodedDetails();
                 String encodedData = (String) map.get("additional_info");
-                //idStr -> json
                 if (encodedData != null && !encodedData.isEmpty()) {
                     return MasterJwt.decode(encodedData);
                 }
@@ -130,31 +104,16 @@ public class UserServiceImpl implements UserDetailsService {
         return (authentication instanceof AnonymousAuthenticationToken) ? null : ((OAuth2AuthenticationDetails) authentication.getDetails()).getTokenValue();
     }
 
-    public String getTenantInfo() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            OAuth2AuthenticationDetails oauthDetails =
-                    (OAuth2AuthenticationDetails) authentication.getDetails();
-            if (oauthDetails != null) {
-                Map<String, Object> map = (Map<String, Object>) oauthDetails.getDecodedDetails();
-                return (String) map.get("tenant_info");
-            }
-        }
-        return null;
-    }
-
     public OAuth2AccessToken getAccessTokenForMultipleTenancies(ClientDetails client, TokenRequest tokenRequest, String username, String password, String tenant, String totp, AuthorizationServerTokenServices tokenServices) throws GeneralSecurityException, IOException {
         Map<String, String> requestParameters = new HashMap<>();
         requestParameters.put("grant_type", tokenRequest.getGrantType());
         requestParameters.put("tenantId", tokenRequest.getRequestParameters().get("tenantId"));
-
         String clientId = client.getClientId();
         boolean approved = true;
         Set<String> responseTypes = new HashSet<>();
         responseTypes.add("code");
         Map<String, Serializable> extensionProperties = new HashMap<>();
-
-        UserDetails userDetails = loadUserByUsername(username, password, totp, tokenRequest.getGrantType(), tenant);
+        UserDetails userDetails = loadUserByUsername(username, password, tokenRequest.getRequestParameters());
         OAuth2Request oAuth2Request = new OAuth2Request(requestParameters, clientId,
                 userDetails.getAuthorities(), approved, client.getScope(),
                 client.getResourceIds(), null, responseTypes, extensionProperties);
@@ -164,33 +123,34 @@ public class UserServiceImpl implements UserDetailsService {
         return tokenServices.createAccessToken(auth);
     }
 
-    public UserDetails loadUserByUsername(String username, String password, String totp, String grantedType, String tenant) {
-        Account user = accountRepository.findFirstByUsername(username).orElse(null);
-        if (user == null
-                || !Objects.equals(MasterConstant.STATUS_ACTIVE, user.getStatus())
-                || !passwordEncoder.matches(password, user.getPassword())) {
+    public UserDetails loadUserByUsername(String username, String password, Map<String, String> detailsMap) {
+        String grantType = detailsMap.get("grant_type");
+        String tenantId = detailsMap.get("tenantId");
+        String totp = detailsMap.get("totp");
+        Account user = null;
+        if (SecurityConstant.GRANT_TYPE_PASSWORD.equals(grantType)) {
+            user = accountRepository.findFirstByUsernameAndKind(username, MasterConstant.USER_KIND_ADMIN).orElse(null);
+        } else if (SecurityConstant.GRANT_TYPE_CUSTOMER.equals(grantType)) {
+            if (StringUtils.isBlank(tenantId)) {
+                throw new BadRequestException("[General] tenantId is required");
+            }
+            user = accountRepository.findFirstByUsernameAndKind(username, MasterConstant.USER_KIND_CUSTOMER).orElse(null);
+            Location location = locationRepository.findFirstByTenantId(tenantId).orElse(null);
+            checkValidLocation(location);
+        }
+        if (user == null || !Objects.equals(MasterConstant.STATUS_ACTIVE, user.getStatus()) || !passwordEncoder.matches(password, user.getPassword())) {
             throw new BadRequestException(ErrorCode.GENERAL_ERROR_INVALID_USERNAME_OR_PASSWORD, "[General] Invalid username or password!");
-        }
-        if (Objects.equals(user.getKind(), MasterConstant.USER_KIND_CUSTOMER)) {
-//            String tenantInfo = restaurantRepository.findTenantInfoOfCustomer(user.getId());
-//            if (tenantInfo == null || tenantInfo.isEmpty()) {
-//                log.error("[General] Customer of Restaurant does not have Db Config!");
-//                throw new BadRequestException("[General] Customer of Restaurant does not have Db Config!", ErrorCode.GENERAL_ERROR_RESTAURANT_DOES_NOT_HAVE_DB_CONFIG);
-//            }
-        }
-        if (grantedType.equals(SecurityConstant.GRANT_TYPE_EMPLOYEE) && !Objects.equals(user.getKind(), MasterConstant.USER_KIND_EMPLOYEE)) {
-            throw new BadRequestException(ErrorCode.GENERAL_ERROR_INVALID_LOGIN_BY_EMPLOYEE, "[General] Invalid login by employee");
         }
         boolean enabled = true;
         Set<GrantedAuthority> grantedAuthorities = getAccountPermission(user);
-        if (Boolean.TRUE.equals(isMfaEnable) && Objects.equals(grantedType, SecurityConstant.GRANT_TYPE_PASSWORD)) {
+        if (Boolean.TRUE.equals(isMfaEnable)) {
             checkMFA(user, totp);
             if (Boolean.FALSE.equals(user.getIsMfa())) {
                 user.setIsMfa(true);
                 accountRepository.save(user);
             }
         }
-        return new org.springframework.security.core.userdetails.User(username, user.getPassword(), enabled, true, true, true, grantedAuthorities);
+        return new User(username, user.getPassword(), enabled, enabled, enabled, enabled, grantedAuthorities);
     }
 
     private void checkMFA(Account user, String totp) {
@@ -228,5 +188,24 @@ public class UserServiceImpl implements UserDetailsService {
 
     public String getBearerTokenHeader() {
         return FeignConstant.AUTH_BEARER_TOKEN + " " + getCurrentToken();
+    }
+
+    public void checkValidLocation(Location location) {
+        if (location == null) {
+            throw new BadRequestException(ErrorCode.LOCATION_ERROR_NOT_FOUND, "Location not found");
+        }
+        if (!MasterConstant.STATUS_ACTIVE.equals(location.getStatus())) {
+            throw new BadRequestException(ErrorCode.LOCATION_ERROR_NOT_ACTIVE, "Location not active");
+        }
+        if (location.getExpiredDate().before(new Date())) {
+            throw new BadRequestException(ErrorCode.LOCATION_ERROR_EXPIRED, "Location is expired");
+        }
+        Customer customer = location.getCustomer();
+        if (customer == null) {
+            throw new BadRequestException(ErrorCode.CUSTOMER_ERROR_NOT_FOUND, "Customer not found");
+        }
+        if (!MasterConstant.STATUS_ACTIVE.equals(customer.getStatus())) {
+            throw new BadRequestException(ErrorCode.CUSTOMER_ERROR_NOT_ACTIVE, "Customer not active");
+        }
     }
 }

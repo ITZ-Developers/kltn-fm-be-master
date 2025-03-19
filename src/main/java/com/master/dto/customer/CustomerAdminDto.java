@@ -8,8 +8,6 @@ import lombok.Data;
 
 @Data
 public class CustomerAdminDto extends ABasicAdminDto {
-    @ApiModelProperty(name = "name")
-    private String name;
     @ApiModelProperty(name = "account")
     private AccountDto account;
     @ApiModelProperty(name = "branch")

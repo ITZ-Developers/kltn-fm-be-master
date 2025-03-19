@@ -911,4 +911,13 @@
             <column name="modified_date" valueDate="2025-02-18T09:02:12"/>
         </insert>
     </changeSet>
+    <changeSet author="Master" id="1739846395035-20">
+        <sql>
+            <![CDATA[
+            UPDATE oauth_client_details
+            SET authorized_grant_types = 'password,customer,employee'
+            WHERE client_id = 'abc_client';
+            ]]>
+        </sql>
+    </changeSet>
 </databaseChangeLog>

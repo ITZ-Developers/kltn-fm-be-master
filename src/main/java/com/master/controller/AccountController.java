@@ -7,13 +7,9 @@ import com.master.exception.BadRequestException;
 import com.master.feign.service.FeignTenantService;
 import com.master.form.account.*;
 import com.master.mapper.AccountMapper;
-import com.master.mapper.BranchMapper;
 import com.master.model.Account;
-import com.master.model.Branch;
 import com.master.repository.*;
-import com.master.service.MasterApiService;
-import com.master.service.MediaService;
-import com.master.service.TotpManager;
+import com.master.service.*;
 import com.master.service.mail.MailServiceImpl;
 import com.master.utils.*;
 import com.master.dto.ApiMessageDto;
@@ -31,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,10 +53,6 @@ public class AccountController extends ABasicController{
     @Autowired
     private CustomerRepository customerRepository;
     @Autowired
-    private BranchRepository branchRepository;
-    @Autowired
-    private BranchMapper branchMapper;
-    @Autowired
     private MediaService mediaService;
     @Value("${mfa.enabled}")
     private Boolean isMfaEnable;
@@ -71,6 +64,10 @@ public class AccountController extends ABasicController{
     private MailServiceImpl mailService;
     @Autowired
     private FeignTenantService feignTenantService;
+    @Autowired
+    private SessionService sessionService;
+    @Autowired
+    private Oauth2JWTService oauth2JWTService;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_V')")
@@ -80,22 +77,22 @@ public class AccountController extends ABasicController{
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
         }
         AccountAdminDto dto = accountMapper.fromEntityToAccountAdminDto(account);
-        List<Branch> branches = branchRepository.findAllByAccountId(account.getId());
-        if (!branches.isEmpty()) {
-            dto.setBranches(branchMapper.fromEntityListToBranchDtoListAutoComplete(branches));
-        }
+        sessionService.mappingLastLoginForAccount(dto);
         return makeSuccessResponse(dto, "Get account success");
     }
 
     @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_L')")
     public ApiMessageDto<ResponseListDto<List<AccountAdminDto>>> list(AccountCriteria accountCriteria, Pageable pageable) {
+        accountCriteria.setKind(MasterConstant.USER_KIND_ADMIN);
         if (accountCriteria.getIsPaged().equals(MasterConstant.BOOLEAN_FALSE)){
             pageable = PageRequest.of(0, Integer.MAX_VALUE);
         }
         Page<Account> accounts = accountRepository.findAll(accountCriteria.getCriteria(), pageable);
         ResponseListDto<List<AccountAdminDto>> responseListObj = new ResponseListDto<>();
-        responseListObj.setContent(accountMapper.fromEntityListToAccountAdminDtoList(accounts.getContent()));
+        List<AccountAdminDto> dtos = accountMapper.fromEntityListToAccountAdminDtoList(accounts.getContent());
+        sessionService.mappingLastLoginForListAccounts(dtos);
+        responseListObj.setContent(dtos);
         responseListObj.setTotalPages(accounts.getTotalPages());
         responseListObj.setTotalElements(accounts.getTotalElements());
         return makeSuccessResponse(responseListObj, "Get list account success");
@@ -165,6 +162,7 @@ public class AccountController extends ABasicController{
             }
             account.setAvatarPath(updateAccountAdminForm.getAvatarPath());
         }
+        boolean isLock = MasterConstant.STATUS_ACTIVE.equals(account.getStatus()) && !MasterConstant.STATUS_ACTIVE.equals(updateAccountAdminForm.getStatus());
         accountMapper.fromUpdateAccountAdminFormToEntity(updateAccountAdminForm, account);
         Group group = groupRepository.findFirstByIdAndKind(updateAccountAdminForm.getGroupId(), MasterConstant.USER_KIND_ADMIN).orElse(null);
         if (group == null) {
@@ -175,6 +173,9 @@ public class AccountController extends ABasicController{
             account.setPassword(passwordEncoder.encode(updateAccountAdminForm.getPassword()));
         }
         accountRepository.save(account);
+        if (isLock) {
+            sessionService.sendMessageLockAccount(account.getUsername(), account.getKind(), null);
+        }
         return makeSuccessResponse(null, "Update account admin success");
     }
 
@@ -194,6 +195,9 @@ public class AccountController extends ABasicController{
         mediaService.deleteFile(account.getAvatarPath());
         customerRepository.deleteAllByAccountId(id);
         accountRepository.deleteById(id);
+        if (MasterConstant.STATUS_ACTIVE.equals(account.getStatus())) {
+            sessionService.sendMessageLockAccount(account.getUsername(), account.getKind(), null);
+        }
         return makeSuccessResponse(null, "Delete account success");
     }
 
@@ -341,5 +345,10 @@ public class AccountController extends ABasicController{
             throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_PASSWORD_INVALID, "Invalid password");
         }
         return feignTenantService.clearKey(tenantApiKey);
+    }
+
+    @PostMapping(value = "/login-employee", produces = MediaType.APPLICATION_JSON_VALUE)
+    public OAuth2AccessToken loginEmployee(@Valid @RequestBody LoginEmployeeForm form, BindingResult bindingResult) {
+        return oauth2JWTService.getAccessTokenForEmployee(form);
     }
 }

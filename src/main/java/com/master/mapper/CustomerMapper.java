@@ -70,7 +70,6 @@ public interface CustomerMapper {
     @Named("fromEntityToCustomerDtoProfile")
     CustomerDto fromEntityToCustomerDtoProfile(Customer customer);
 
-    @Mapping(source = "email", target = "email")
     @Mapping(source = "fullName", target = "fullName")
     @Mapping(source = "avatarPath", target = "avatarPath", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
     @BeanMapping(ignoreByDefault = true)
