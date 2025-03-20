@@ -36,6 +36,7 @@ public interface BranchMapper {
 
     @Mapping(source = "id", target = "id")
     @Mapping(source = "name", target = "name")
+    @Mapping(source = "description", target = "description")
     @BeanMapping(ignoreByDefault = true)
     @Named("fromEntityToBranchDtoAutoComplete")
     BranchDto fromEntityToBranchDtoAutoComplete(Branch branch);
