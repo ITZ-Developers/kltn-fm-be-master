@@ -12,8 +12,8 @@ public class ErrorCode {
     public static final String GENERAL_ERROR_ACCOUNT_NOT_SET_UP_2FA = "ERROR-GENERAL-0005";
     public static final String GENERAL_ERROR_VERIFY_TOTP_FAILED = "ERROR-GENERAL-0006";
     public static final String GENERAL_ERROR_LOCATION_DOES_NOT_HAVE_DB_CONFIG = "ERROR-GENERAL-0007";
-    public static final String GENERAL_ERROR_INVALID_SESSION = "ERROR-GENERAL-0008";
-    public static final String GENERAL_ERROR_INVALID_API_KEY = "ERROR-GENERAL-0009";
+    public static final String GENERAL_ERROR_INVALID_SESSION = "ERROR-INVALID-SESSION";
+    public static final String GENERAL_ERROR_INVALID_API_KEY = "ERROR-INVALID-API-KEY";
 
     /**
      * Starting error code Account
