@@ -78,7 +78,6 @@ public class AccountController extends ABasicController{
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
         }
         AccountAdminDto dto = accountMapper.fromEntityToAccountAdminDto(account);
-        sessionService.mappingLastLoginForAccount(dto);
         return makeSuccessResponse(dto, "Get account success");
     }
 

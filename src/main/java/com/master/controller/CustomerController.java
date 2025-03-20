@@ -74,7 +74,6 @@ public class CustomerController extends ABasicController {
             return makeErrorResponse(ErrorCode.CUSTOMER_ERROR_NOT_FOUND, "Not found customer");
         }
         CustomerAdminDto dto = customerMapper.fromEntityToCustomerAdminDto(customer);
-        sessionService.mappingLastLoginForCustomer(dto);
         return makeSuccessResponse(dto, "Get customer success");
     }
 
