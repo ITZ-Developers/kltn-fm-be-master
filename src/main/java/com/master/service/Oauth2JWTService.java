@@ -101,7 +101,7 @@ public class Oauth2JWTService {
 
     public OAuth2AccessToken getAccessTokenForEmployee(LoginEmployeeForm form) {
         RequestInfoDto info = new RequestInfoDto();
-        info.setGrantType(SecurityConstant.GRANT_TYPE_EMPLOYEE);
+        info.setGrantType(form.getGrantType());
         info.setUserId(form.getUserId());
         info.setUsername(form.getUsername());
         info.setTenantId(form.getTenantId());

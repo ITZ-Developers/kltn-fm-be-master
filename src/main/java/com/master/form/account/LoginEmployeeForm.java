@@ -1,5 +1,6 @@
 package com.master.form.account;
 
+import com.master.validation.EmployeeGrantType;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
@@ -16,6 +17,8 @@ public class LoginEmployeeForm {
     private String username;
     @NotBlank(message = "tenantId is required")
     private String tenantId;
+    @EmployeeGrantType
+    private String grantType;
     @NotEmpty(message = "permissionIds is required")
     private List<Long> permissionIds = new ArrayList<>();
 }

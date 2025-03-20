@@ -16,6 +16,7 @@ import com.master.mapper.CustomerMapper;
 import com.master.mapper.LocationMapper;
 import com.master.model.*;
 import com.master.model.criteria.CustomerCriteria;
+import com.master.redis.RedisConstant;
 import com.master.repository.*;
 import com.master.service.MediaService;
 import com.master.service.SessionService;
@@ -183,7 +184,7 @@ public class CustomerController extends ABasicController {
         customer.setAccount(account);
         customerRepository.save(customer);
         if (isLock) {
-            sessionService.sendMessageLockAccount(account.getUsername(), account.getKind(), null);
+            sessionService.sendMessageLockAccount(RedisConstant.KEY_CUSTOMER, account.getUsername(), account.getKind(), null);
         }
         return makeSuccessResponse(null, "Update customer success");
     }
@@ -200,7 +201,7 @@ public class CustomerController extends ABasicController {
         }
         customerRepository.deleteById(id);
         if (MasterConstant.STATUS_ACTIVE.equals(customer.getStatus())) {
-            sessionService.sendMessageLockAccount(customer.getAccount().getUsername(), customer.getAccount().getKind(), null);
+            sessionService.sendMessageLockAccount(RedisConstant.KEY_CUSTOMER, customer.getAccount().getUsername(), customer.getAccount().getKind(), null);
         }
         return makeSuccessResponse(null, "Delete customer success");
     }

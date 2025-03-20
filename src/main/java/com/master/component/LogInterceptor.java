@@ -6,7 +6,6 @@ import com.master.dto.ApiMessageDto;
 import com.master.dto.ErrorCode;
 import com.master.redis.RedisConstant;
 import com.master.redis.RedisService;
-import com.master.redis.dto.SessionDto;
 import com.master.service.HttpService;
 import com.master.service.impl.UserServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +24,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Component
 @Slf4j
@@ -51,15 +49,15 @@ public class LogInterceptor implements HandlerInterceptor {
         if (DispatcherType.REQUEST.name().equals(request.getDispatcherType().name())
                 && request.getMethod().equals(HttpMethod.GET.name())) {
         }
-        long startTime = System.currentTimeMillis();
-        request.setAttribute("startTime", startTime);
-        log.debug("Starting call url: [" + getUrl(request) + "]");
         if (isAllowed(request, INTERNAL_REQUEST) && !httpService.checkInternalRequest(request)) {
             return handleUnauthorized(response, ErrorCode.GENERAL_ERROR_INVALID_API_KEY, "Full authentication is required to access this resource");
         }
         if (!isAllowed(request, WHITE_LIST) && !isValidSession()) {
             return handleUnauthorized(response, ErrorCode.GENERAL_ERROR_INVALID_SESSION, "Invalid session");
         }
+        long startTime = System.currentTimeMillis();
+        request.setAttribute("startTime", startTime);
+        log.debug("Starting call url: [" + getUrl(request) + "]");
         return true;
     }
 
@@ -125,8 +123,9 @@ public class LogInterceptor implements HandlerInterceptor {
             key = redisService.getKeyString(RedisConstant.KEY_CUSTOMER, username, null);
         } else if (SecurityConstant.GRANT_TYPE_PASSWORD.equals(grantType)) {
             key = redisService.getKeyString(RedisConstant.KEY_ADMIN, username, null);
+        } else {
+            key = redisService.getKeyString(RedisConstant.KEY_MOBILE, username, tenantName);
         }
-        String currentSession = redisService.get(key, SessionDto.class).getSession();
-        return Objects.equals(currentSession, sessionId);
+        return redisService.checkSession(key, sessionId);
     }
 }

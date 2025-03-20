@@ -90,15 +90,17 @@ public class CustomTokenEnhancer implements TokenEnhancer {
         sessionRequestForm.setSession(sessionId);
         sessionRequestForm.setTime(DateUtils.formatDate(date));
         String key;
-        if (Objects.equals(grantType, SecurityConstant.GRANT_TYPE_PASSWORD)) {
-            key = redisService.getKeyString(RedisConstant.KEY_ADMIN, username, null);
-        } else if (Objects.equals(grantType, SecurityConstant.GRANT_TYPE_CUSTOMER)) {
-            key = redisService.getKeyString(RedisConstant.KEY_CUSTOMER, username, null);
-        } else {
-            key = redisService.getKeyString(RedisConstant.KEY_EMPLOYEE, username, tenantName);
-        }
-        redisService.sendMessageLockAccount(username, userKind, tenantName);
-        redisService.put(key, sessionRequestForm);
+        Integer keyType;
+        Map<String, Integer> keyTypeMap = Map.of(
+                SecurityConstant.GRANT_TYPE_PASSWORD, RedisConstant.KEY_ADMIN,
+                SecurityConstant.GRANT_TYPE_CUSTOMER, RedisConstant.KEY_CUSTOMER,
+                SecurityConstant.GRANT_TYPE_EMPLOYEE, RedisConstant.KEY_EMPLOYEE,
+                SecurityConstant.GRANT_TYPE_MOBILE, RedisConstant.KEY_MOBILE
+        );
+        keyType = keyTypeMap.getOrDefault(grantType, RedisConstant.KEY_MOBILE);
+        key = redisService.getKeyString(keyType, username, tenantName);
+        redisService.sendMessageLockAccount(keyType, username, userKind, tenantName);
+        redisService.putKeyCache(key, sessionId);
         return additionalInfo;
     }
 
@@ -132,7 +134,8 @@ public class CustomTokenEnhancer implements TokenEnhancer {
         Long userId = null;
         try {
             userId = Long.parseLong(requestParams.get("userId"));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         if (StringUtils.isNotBlank(authentication.getName())) {
             username = authentication.getName();
         }

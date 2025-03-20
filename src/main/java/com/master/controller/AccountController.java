@@ -8,6 +8,7 @@ import com.master.feign.service.FeignTenantService;
 import com.master.form.account.*;
 import com.master.mapper.AccountMapper;
 import com.master.model.Account;
+import com.master.redis.RedisConstant;
 import com.master.repository.*;
 import com.master.service.*;
 import com.master.service.mail.MailServiceImpl;
@@ -174,7 +175,7 @@ public class AccountController extends ABasicController{
         }
         accountRepository.save(account);
         if (isLock) {
-            sessionService.sendMessageLockAccount(account.getUsername(), account.getKind(), null);
+            sessionService.sendMessageLockAccount(RedisConstant.KEY_ADMIN, account.getUsername(), account.getKind(), null);
         }
         return makeSuccessResponse(null, "Update account admin success");
     }
@@ -196,7 +197,7 @@ public class AccountController extends ABasicController{
         customerRepository.deleteAllByAccountId(id);
         accountRepository.deleteById(id);
         if (MasterConstant.STATUS_ACTIVE.equals(account.getStatus())) {
-            sessionService.sendMessageLockAccount(account.getUsername(), account.getKind(), null);
+            sessionService.sendMessageLockAccount(RedisConstant.KEY_ADMIN, account.getUsername(), account.getKind(), null);
         }
         return makeSuccessResponse(null, "Delete account success");
     }
