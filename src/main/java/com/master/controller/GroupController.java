@@ -124,7 +124,9 @@ public class GroupController extends ABasicController {
         if (accountRepository.existsByGroupId(id)) {
             throw new BadRequestException(ErrorCode.GROUP_ERROR_NOT_ALLOW_DELETE, "Account existed with this group");
         }
-        groupRepository.deleteById(id);
+        permissionRepository.deleteAllPermissionsByGroupId(id);
+        group.setPermissions(null);
+        groupRepository.save(group);
         return makeSuccessResponse(null, "Delete group success");
     }
 

@@ -198,6 +198,7 @@ public class CustomerController extends ABasicController {
         if (locationRepository.existsByCustomerId(id)) {
             return makeErrorResponse(ErrorCode.CUSTOMER_ERROR_NOT_ALLOW_DELETE, "Not allowed to delete customer");
         }
+        accountRepository.deleteAllByCustomerId(id);
         customerRepository.deleteById(id);
         if (MasterConstant.STATUS_ACTIVE.equals(customer.getStatus())) {
             sessionService.sendMessageLockAccount(RedisConstant.KEY_CUSTOMER, customer.getAccount().getUsername(), customer.getAccount().getKind(), null);

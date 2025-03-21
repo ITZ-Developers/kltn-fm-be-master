@@ -69,6 +69,8 @@ public class AccountController extends ABasicController{
     private SessionService sessionService;
     @Autowired
     private Oauth2JWTService oauth2JWTService;
+    @Autowired
+    private AccountBranchRepository accountBranchRepository;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_V')")
@@ -192,6 +194,7 @@ public class AccountController extends ABasicController{
         if (Long.valueOf(getCurrentUser()).equals(account.getId())){
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_ALLOW_DELETE_YOURSELF, "Not allow to delete yourself");
         }
+        accountBranchRepository.deleteAllByAccountId(id);
         mediaService.deleteFile(account.getAvatarPath());
         customerRepository.deleteAllByAccountId(id);
         accountRepository.deleteById(id);
