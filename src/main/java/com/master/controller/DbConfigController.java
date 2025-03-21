@@ -16,6 +16,7 @@ import com.master.model.criteria.DbConfigCriteria;
 import com.master.repository.DbConfigRepository;
 import com.master.repository.LocationRepository;
 import com.master.repository.ServerProviderRepository;
+import com.master.service.impl.UserServiceImpl;
 import com.master.utils.GenerateUtils;
 import com.master.utils.TenantUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +47,8 @@ public class DbConfigController extends ABasicController {
     private ServerProviderRepository serverProviderRepository;
     @Autowired
     private DbConfigMapper dbConfigMapper;
+    @Autowired
+    private UserServiceImpl userService;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('DB_C_V')")
@@ -75,6 +78,7 @@ public class DbConfigController extends ABasicController {
         if (dbConfig == null) {
             return makeErrorResponse(ErrorCode.DB_CONFIG_ERROR_NOT_FOUND, "Not found db config");
         }
+        userService.checkValidLocation(dbConfig.getLocation());
         return makeSuccessResponse(dbConfigMapper.fromEntityToDbConfigAdminDto(dbConfig), "Get db config success");
     }
 
