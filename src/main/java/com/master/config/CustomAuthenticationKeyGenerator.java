@@ -16,7 +16,6 @@ import java.util.Map;
 
 @Component
 public class CustomAuthenticationKeyGenerator implements AuthenticationKeyGenerator {
-
     private static final String CLIENT_ID = "client_id";
     private static final String SCOPE = "scope";
     private static final String USERNAME = "username";

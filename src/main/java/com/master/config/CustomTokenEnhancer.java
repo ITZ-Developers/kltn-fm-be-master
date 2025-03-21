@@ -3,7 +3,7 @@ package com.master.config;
 import com.master.constant.MasterConstant;
 import com.master.dto.auth.RequestInfoDto;
 import com.master.redis.RedisConstant;
-import com.master.redis.RedisService;
+import com.master.redis.CacheClientService;
 import com.master.redis.dto.SessionRequestForm;
 import com.master.utils.DateUtils;
 import com.master.utils.GenerateUtils;
@@ -28,13 +28,13 @@ public class CustomTokenEnhancer implements TokenEnhancer {
     private JdbcTemplate jdbcTemplate;
     private ObjectMapper objectMapper;
     private Boolean isMfaEnable;
-    private RedisService redisService;
+    private CacheClientService cacheClientService;
 
-    public CustomTokenEnhancer(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper, Boolean isMfaEnable, RedisService redisService) {
+    public CustomTokenEnhancer(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper, Boolean isMfaEnable, CacheClientService cacheClientService) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
         this.isMfaEnable = isMfaEnable;
-        this.redisService = redisService;
+        this.cacheClientService = cacheClientService;
     }
 
     @Override
@@ -98,9 +98,9 @@ public class CustomTokenEnhancer implements TokenEnhancer {
                 SecurityConstant.GRANT_TYPE_MOBILE, RedisConstant.KEY_MOBILE
         );
         keyType = keyTypeMap.getOrDefault(grantType, RedisConstant.KEY_MOBILE);
-        key = redisService.getKeyString(keyType, username, tenantName);
-        redisService.sendMessageLockAccount(keyType, username, userKind, tenantName);
-        redisService.putKeyCache(key, sessionId);
+        key = cacheClientService.getKeyString(keyType, username, tenantName);
+        cacheClientService.sendMessageLockAccount(keyType, username, userKind, tenantName);
+        cacheClientService.putKeyCache(key, sessionId);
         return additionalInfo;
     }
 

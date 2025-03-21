@@ -3,7 +3,7 @@ package com.master.config;
 import com.master.exception.BadRequestException;
 import com.master.exception.NotFoundException;
 import com.master.exception.oauth.CustomOauthException;
-import com.master.redis.RedisService;
+import com.master.redis.CacheClientService;
 import com.master.service.impl.UserServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +47,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
-    private RedisService redisService;
+    private CacheClientService cacheClientService;
     @Value("${mfa.enabled}")
     private Boolean isMfaEnabled;
 
@@ -67,7 +67,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     @Override
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
         TokenEnhancerChain tokenEnhancerChain = new TokenEnhancerChain();
-        tokenEnhancerChain.setTokenEnhancers(Arrays.asList(new CustomTokenEnhancer(jdbcTemplate, objectMapper, isMfaEnabled, redisService), accessTokenConverter()));
+        tokenEnhancerChain.setTokenEnhancers(Arrays.asList(new CustomTokenEnhancer(jdbcTemplate, objectMapper, isMfaEnabled, cacheClientService), accessTokenConverter()));
         endpoints
                 .pathMapping("/oauth/authorize", "/api/authorize")
                 .pathMapping("/oauth/token", "/api/token")

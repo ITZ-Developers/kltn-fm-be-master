@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 @Service
-public class RedisService {
+public class CacheClientService {
     private static final String PREFIX_KEY_ADMIN = "adm:";
     private static final String PREFIX_KEY_CUSTOMER = "cus:";
     public static final String PREFIX_KEY_EMPLOYEE = "emp:";

@@ -11,8 +11,7 @@ import com.master.rabbit.RabbitService;
 import com.master.rabbit.form.LockAccountRequest;
 import com.master.rabbit.form.ProcessTenantForm;
 import com.master.redis.RedisConstant;
-import com.master.redis.RedisService;
-import com.master.redis.dto.SessionDto;
+import com.master.redis.CacheClientService;
 import com.master.repository.AccountRepository;
 import com.master.repository.LocationRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +30,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SessionService {
     @Autowired
-    private RedisService redisService;
+    private CacheClientService cacheClientService;
     @Autowired
     private RabbitService rabbitService;
     @Value("${rabbitmq.queue.notification}")
@@ -40,15 +39,6 @@ public class SessionService {
     private LocationRepository locationRepository;
     @Autowired
     private AccountRepository accountRepository;
-
-    public void mappingLastLoginForAccount(AccountAdminDto account) {
-        Integer keyType = MasterConstant.USER_KIND_ADMIN.equals(account.getKind()) ? RedisConstant.KEY_ADMIN : RedisConstant.KEY_CUSTOMER;
-        String key = redisService.getKeyString(keyType, account.getUsername(), null);
-        CacheKeyDto dto = redisService.getKeyCache(key);
-        if (dto != null && dto.getTime() != null) {
-            account.setLastLogin(dto.getTime());
-        }
-    }
 
     public void mappingLastLoginForListAccounts(List<AccountAdminDto> accounts) {
         if (accounts == null || accounts.isEmpty()) {
@@ -59,10 +49,10 @@ public class SessionService {
             Integer keyType = MasterConstant.USER_KIND_ADMIN.equals(account.getKind())
                     ? RedisConstant.KEY_ADMIN
                     : RedisConstant.KEY_CUSTOMER;
-            String key = redisService.getKeyString(keyType, account.getUsername(), null);
+            String key = cacheClientService.getKeyString(keyType, account.getUsername(), null);
             keyToAccountMap.put(key, account);
         }
-        List<CacheKeyDto> dtos = redisService.getMultiKeys(new ArrayList<>(keyToAccountMap.keySet()));
+        List<CacheKeyDto> dtos = cacheClientService.getMultiKeys(new ArrayList<>(keyToAccountMap.keySet()));
         if (dtos == null || dtos.isEmpty()) {
             return;
         }
@@ -77,24 +67,16 @@ public class SessionService {
         }
     }
 
-    public void mappingLastLoginForCustomer(CustomerAdminDto account) {
-        String key = redisService.getKeyString(RedisConstant.KEY_CUSTOMER, account.getAccount().getUsername(), null);
-        CacheKeyDto dto = redisService.getKeyCache(key);
-        if (dto != null && dto.getTime() != null) {
-            account.getAccount().setLastLogin(dto.getTime());
-        }
-    }
-
     public void mappingLastLoginForListCustomers(List<CustomerAdminDto> accounts) {
         if (accounts == null || accounts.isEmpty()) {
             return;
         }
         Map<String, CustomerAdminDto> keyToAccountMap = new HashMap<>(accounts.size());
         for (CustomerAdminDto account : accounts) {
-            String key = redisService.getKeyString(RedisConstant.KEY_CUSTOMER, account.getAccount().getUsername(), null);
+            String key = cacheClientService.getKeyString(RedisConstant.KEY_CUSTOMER, account.getAccount().getUsername(), null);
             keyToAccountMap.put(key, account);
         }
-        List<CacheKeyDto> dtos = redisService.getMultiKeys(new ArrayList<>(keyToAccountMap.keySet()));
+        List<CacheKeyDto> dtos = cacheClientService.getMultiKeys(new ArrayList<>(keyToAccountMap.keySet()));
         if (dtos == null || dtos.isEmpty()) {
             return;
         }
@@ -117,8 +99,8 @@ public class SessionService {
         request.setUserKind(userKind);
         request.setTenantName(tenantName);
 
-        String key = redisService.getKeyString(userKind, username, tenantName);
-        CacheKeyDto dto = redisService.removeKey(key);
+        String key = cacheClientService.getKeyString(userKind, username, tenantName);
+        CacheKeyDto dto = cacheClientService.removeKey(key);
         if (dto != null) {
             ProcessTenantForm<LockAccountRequest> form = new ProcessTenantForm<>();
             form.setAppName(MasterConstant.BACKEND_APP);
@@ -130,11 +112,11 @@ public class SessionService {
     }
 
     public void sendMessageLockAccountsByTenantId(Integer keyType, String tenantName) {
-        String keyPattern = RedisService.PREFIX_KEY_EMPLOYEE + tenantName + ":*";
+        String keyPattern = CacheClientService.PREFIX_KEY_EMPLOYEE + tenantName + ":*";
         if (RedisConstant.KEY_MOBILE.equals(keyType)) {
-            keyPattern = RedisService.PREFIX_KEY_MOBILE + tenantName + ":*";
+            keyPattern = CacheClientService.PREFIX_KEY_MOBILE + tenantName + ":*";
         }
-        List<CacheKeyDto> dtos = redisService.removeKeyByPattern(keyPattern);
+        List<CacheKeyDto> dtos = cacheClientService.removeKeyByPattern(keyPattern);
         for (CacheKeyDto dto : dtos) {
             String[] keyParts = dto.getKey().split(":");
             if (keyParts.length <= 2 || StringUtils.isBlank(keyParts[1])) {

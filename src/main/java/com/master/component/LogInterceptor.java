@@ -5,7 +5,7 @@ import com.master.config.SecurityConstant;
 import com.master.dto.ApiMessageDto;
 import com.master.dto.ErrorCode;
 import com.master.redis.RedisConstant;
-import com.master.redis.RedisService;
+import com.master.redis.CacheClientService;
 import com.master.service.HttpService;
 import com.master.service.impl.UserServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ public class LogInterceptor implements HandlerInterceptor {
     @Autowired
     private UserServiceImpl userService;
     @Autowired
-    private RedisService redisService;
+    private CacheClientService cacheClientService;
     private static final List<String> INTERNAL_REQUEST = List.of(
             "/v1/db-config/get-by-name",
             "/v1/group/employee",
@@ -118,14 +118,14 @@ public class LogInterceptor implements HandlerInterceptor {
         String tenantName = String.valueOf(attributes.get("tenant_name"));
         String key = "";
         if (SecurityConstant.GRANT_TYPE_EMPLOYEE.equals(grantType)) {
-            key = redisService.getKeyString(RedisConstant.KEY_EMPLOYEE, username, tenantName);
+            key = cacheClientService.getKeyString(RedisConstant.KEY_EMPLOYEE, username, tenantName);
         } else if (SecurityConstant.GRANT_TYPE_CUSTOMER.equals(grantType)) {
-            key = redisService.getKeyString(RedisConstant.KEY_CUSTOMER, username, null);
+            key = cacheClientService.getKeyString(RedisConstant.KEY_CUSTOMER, username, null);
         } else if (SecurityConstant.GRANT_TYPE_PASSWORD.equals(grantType)) {
-            key = redisService.getKeyString(RedisConstant.KEY_ADMIN, username, null);
+            key = cacheClientService.getKeyString(RedisConstant.KEY_ADMIN, username, null);
         } else {
-            key = redisService.getKeyString(RedisConstant.KEY_MOBILE, username, tenantName);
+            key = cacheClientService.getKeyString(RedisConstant.KEY_MOBILE, username, tenantName);
         }
-        return redisService.checkSession(key, sessionId);
+        return cacheClientService.checkSession(key, sessionId);
     }
 }

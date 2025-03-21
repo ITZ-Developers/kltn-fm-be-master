@@ -2,13 +2,12 @@ package com.master.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.master.config.CustomTokenEnhancer;
-import com.master.config.SecurityConstant;
 import com.master.constant.MasterConstant;
 import com.master.dto.auth.OauthClientDetailsDto;
 import com.master.dto.auth.RequestInfoDto;
 import com.master.exception.BadRequestException;
 import com.master.form.account.LoginEmployeeForm;
-import com.master.redis.RedisService;
+import com.master.redis.CacheClientService;
 import com.master.repository.PermissionRepository;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +45,7 @@ public class Oauth2JWTService {
     @Value("${security.oauth2.client.id}")
     private String basicClientId;
     @Autowired
-    private RedisService redisService;
+    private CacheClientService cacheClientService;
     @Autowired
     private PermissionRepository permissionRepository;
 
@@ -54,7 +53,7 @@ public class Oauth2JWTService {
         try {
             OAuth2Authentication authentication = convertAuthentication(userPrincipal, clientDetails, requestInfoDto);
             TokenEnhancerChain tokenEnhancerChain = new TokenEnhancerChain();
-            tokenEnhancerChain.setTokenEnhancers(Arrays.asList(new CustomTokenEnhancer(jdbcTemplate, objectMapper, isMfaEnable, redisService), accessTokenConverter));
+            tokenEnhancerChain.setTokenEnhancers(Arrays.asList(new CustomTokenEnhancer(jdbcTemplate, objectMapper, isMfaEnable, cacheClientService), accessTokenConverter));
             tokenServices.setTokenEnhancer(tokenEnhancerChain);
             tokenServices.setReuseRefreshToken(false);
             tokenServices.setSupportRefreshToken(true);
