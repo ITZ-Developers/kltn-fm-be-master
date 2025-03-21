@@ -127,6 +127,7 @@ public class GroupController extends ABasicController {
         permissionRepository.deleteAllPermissionsByGroupId(id);
         group.setPermissions(null);
         groupRepository.save(group);
+        groupRepository.deleteById(group.getId());
         return makeSuccessResponse(null, "Delete group success");
     }
 
