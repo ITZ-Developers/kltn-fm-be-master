@@ -98,7 +98,11 @@ public class GroupController extends ABasicController {
                 return makeErrorResponse(ErrorCode.GROUP_ERROR_NAME_EXISTED, "Name existed");
             }
         }
-        List<Permission> permissions = permissionRepository.findAllByIdInAndKind(updateGroupForm.getPermissionIds(), group.getKind());
+        Integer kind = MasterConstant.USER_KIND_ADMIN;
+        if (!MasterConstant.USER_KIND_ADMIN.equals(group.getKind())) {
+            kind = MasterConstant.USER_KIND_CUSTOMER;
+        }
+        List<Permission> permissions = permissionRepository.findAllByIdInAndKind(updateGroupForm.getPermissionIds(), kind);
         Set<Long> existingPermissionIds = group.getPermissions().stream().map(Permission::getId).collect(Collectors.toSet());
         Set<Long> newPermissionIds = permissions.stream().map(Permission::getId).collect(Collectors.toSet());
         boolean arePermissionChanged = !Objects.equals(existingPermissionIds, newPermissionIds);
