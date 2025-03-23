@@ -13,4 +13,5 @@ public class VerifyCredentialForm {
     @NotBlank(message = "password cannot be blank!!!")
     @ApiModelProperty(name = "password", required = true)
     private String password;
+    private String tenantId = "";
 }

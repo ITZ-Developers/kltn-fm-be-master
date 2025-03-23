@@ -8,9 +8,11 @@ import com.master.feign.service.FeignTenantService;
 import com.master.form.account.*;
 import com.master.mapper.AccountMapper;
 import com.master.model.Account;
+import com.master.model.Location;
 import com.master.redis.RedisConstant;
 import com.master.repository.*;
 import com.master.service.*;
+import com.master.service.impl.UserServiceImpl;
 import com.master.service.mail.MailServiceImpl;
 import com.master.utils.*;
 import com.master.dto.ApiMessageDto;
@@ -71,6 +73,10 @@ public class AccountController extends ABasicController{
     private Oauth2JWTService oauth2JWTService;
     @Autowired
     private AccountBranchRepository accountBranchRepository;
+    @Autowired
+    private LocationRepository locationRepository;
+    @Autowired
+    private UserServiceImpl userService;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_V')")
@@ -312,6 +318,10 @@ public class AccountController extends ABasicController{
         Account account = accountRepository.findFirstByUsername(verifyCredentialForm.getUsername()).orElse(null);
         if (account == null || !passwordEncoder.matches(verifyCredentialForm.getPassword(), account.getPassword())) {
             throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_WRONG_CREDENTIAL, "[Account] Username or password is wrong!");
+        }
+        if (MasterConstant.USER_KIND_CUSTOMER.equals(account.getKind())) {
+            Location location = locationRepository.findFirstByTenantId(verifyCredentialForm.getTenantId()).orElse(null);
+            userService.checkValidLocation(location);
         }
         VerifyCredentialDto verifyCredentialDto = new VerifyCredentialDto();
         verifyCredentialDto.setIsMfaEnable(isMfaEnable);
