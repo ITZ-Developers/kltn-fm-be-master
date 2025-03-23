@@ -9,6 +9,7 @@ import com.master.dto.customer.CustomerDto;
 import com.master.dto.location.LocationDto;
 import com.master.exception.BadRequestException;
 import com.master.exception.UnauthorizationException;
+import com.master.form.account.RequestKeyForm;
 import com.master.form.customer.CreateCustomerForm;
 import com.master.form.customer.UpdateCustomerForm;
 import com.master.form.customer.UpdateCustomerProfileForm;
@@ -16,24 +17,34 @@ import com.master.mapper.CustomerMapper;
 import com.master.mapper.LocationMapper;
 import com.master.model.*;
 import com.master.model.criteria.CustomerCriteria;
+import com.master.redis.CacheClientService;
 import com.master.redis.RedisConstant;
 import com.master.repository.*;
 import com.master.service.MediaService;
 import com.master.service.SessionService;
 import com.master.service.impl.UserServiceImpl;
+import com.master.utils.RSAUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -65,6 +76,8 @@ public class CustomerController extends ABasicController {
     private UserServiceImpl userService;
     @Autowired
     private SessionService sessionService;
+    @Autowired
+    private CacheClientService cacheClientService;
 
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('CU_V')")
@@ -241,5 +254,41 @@ public class CustomerController extends ABasicController {
         accountRepository.save(customer.getAccount());
         customerRepository.save(customer);
         return makeSuccessResponse(null, "Update customer profile success");
+    }
+
+    @PostMapping("/request-key")
+    public ResponseEntity<Resource> requestKey(@Valid @RequestBody RequestKeyForm requestKeyForm, BindingResult bindingResult) {
+        Customer customer = customerRepository.findById(getCurrentUser()).orElse(null);
+        if (customer == null) {
+            throw new BadRequestException(ErrorCode.CUSTOMER_ERROR_NOT_FOUND, "Not found customer");
+        }
+        if (!passwordEncoder.matches(requestKeyForm.getPassword(), customer.getAccount().getPassword())) {
+            throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_NOT_ALLOW_REQUEST_KEY, "Wrong password");
+        }
+        if (customer.getStatus() == MasterConstant.STATUS_PENDING) {
+            throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_NOT_ALLOW_REQUEST_KEY, "Account status is currently pending");
+        }
+        if (customer.getStatus() == MasterConstant.STATUS_LOCK) {
+            throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_NOT_ALLOW_REQUEST_KEY, "Account has already been locked");
+        }
+        KeyPair keyPair = RSAUtils.generateKeyPair();
+        String publicKey = RSAUtils.keyToString(keyPair.getPublic());
+        String privateKey = RSAUtils.keyToString(keyPair.getPrivate());
+        StringBuilder contentBuilder = new StringBuilder();
+        contentBuilder.append("-----BEGIN PRIVATE KEY-----").append("\n");
+        contentBuilder.append(privateKey).append("\n");
+        contentBuilder.append("-----END PRIVATE KEY-----").append("\n");
+        String key = cacheClientService.getKeyString(RedisConstant.KEY_CUSTOMER, customer.getAccount().getUsername(), null);
+        cacheClientService.putPublicKey(key, publicKey);
+        byte[] contentBytes = contentBuilder.toString().getBytes(StandardCharsets.UTF_8);
+        ByteArrayResource byteArrayResource = new ByteArrayResource(contentBytes);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.TEXT_PLAIN);
+        String timeStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddMMyyyyHHmmss"));
+        String filename = "key_information_" + timeStamp + ".txt";
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(byteArrayResource);
     }
 }

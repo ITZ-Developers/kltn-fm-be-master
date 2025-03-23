@@ -5,6 +5,7 @@ import com.master.feign.dto.CheckSessionDto;
 import com.master.feign.dto.GetMultiKeyForm;
 import com.master.feign.service.FeignCacheService;
 import com.master.model.Account;
+import com.master.redis.dto.PutPublicKeyForm;
 import com.master.repository.AccountRepository;
 import com.master.service.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,5 +85,16 @@ public class CacheClientService {
         dto.setKey(key);
         dto.setSession(sessionId);
         return feignCacheService.checkSession(cacheApiKey, dto).getData().getIsValid();
+    }
+
+    public void putPublicKey(String key, String publicKey) {
+        PutPublicKeyForm form = new PutPublicKeyForm();
+        form.setKey(key);
+        form.setPublicKey(publicKey);
+        feignCacheService.putPublicKey(cacheApiKey, form);
+    }
+
+    public String getPublicKey(String key) {
+        return feignCacheService.getPublicKey(cacheApiKey, key).getData().getPublicKey();
     }
 }
