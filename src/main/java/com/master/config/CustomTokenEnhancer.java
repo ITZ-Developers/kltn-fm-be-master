@@ -140,10 +140,7 @@ public class CustomTokenEnhancer implements TokenEnhancer {
             username = authentication.getName();
         }
         String tenantId = EMPTY_STRING;
-        if (!List.of(
-                SecurityConstant.GRANT_TYPE_PASSWORD,
-                SecurityConstant.GRANT_TYPE_CUSTOMER
-        ).contains(grantType) && StringUtils.isNotBlank(requestParams.get("tenantId"))) {
+        if (!SecurityConstant.GRANT_TYPE_PASSWORD.equals(grantType) && StringUtils.isNotBlank(requestParams.get("tenantId"))) {
             tenantId = requestParams.get("tenantId");
         }
         requestInfoDto.setTenantId(tenantId);

@@ -920,4 +920,7 @@
             ]]>
         </sql>
     </changeSet>
+    <changeSet author="Master" id="1739846395035-21">
+        <dropColumn columnName="aes_secret_key" tableName="db_mst_location"/>
+    </changeSet>
 </databaseChangeLog>

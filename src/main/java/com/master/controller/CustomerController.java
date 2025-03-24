@@ -221,10 +221,7 @@ public class CustomerController extends ABasicController {
 
     @GetMapping(value = "/my-location", produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiMessageDto<LocationDto> myLocations() {
-        Location location = locationRepository.findFirstByTenantIdAndCustomerStatusAndDbConfigIdIsNotNullAndStatusAndExpiredDateAfter(getCurrentTenantName(), MasterConstant.STATUS_ACTIVE, MasterConstant.STATUS_ACTIVE, new Date()).orElse(null);
-        if (location == null) {
-            throw new UnauthorizationException("This location is inaccessible");
-        }
+        Location location = locationRepository.findFirstByTenantId(getCurrentTenantName()).orElse(null);
         userService.checkValidLocation(location);
         return makeSuccessResponse(locationMapper.fromEntityToLocationDto(location), "Get my location success");
     }

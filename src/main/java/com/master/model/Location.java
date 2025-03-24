@@ -29,8 +29,6 @@ public class Location extends Auditable<String> {
     private Customer customer;
     private Date startDate;
     private Date expiredDate;
-    @Column(columnDefinition = "TEXT")
-    private String aesSecretKey;
     @OneToOne(mappedBy = "location", fetch = FetchType.LAZY)
     private DbConfig dbConfig;
 }

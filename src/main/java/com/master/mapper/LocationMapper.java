@@ -49,10 +49,8 @@ public interface LocationMapper {
     @Mapping(target = "dbConfig", source = "dbConfig", qualifiedByName = "fromEntityToDbConfigDto")
     @Mapping(source = "startDate", target = "startDate")
     @Mapping(source = "expiredDate", target = "expiredDate")
-    @Mapping(source = "aesSecretKey", target = "aesSecretKey")
     @Mapping(target = "status", source = "status")
     @Mapping(target = "createdDate", source = "createdDate")
-    @Mapping(target = "modifiedDate", source = "modifiedDate")
     @BeanMapping(ignoreByDefault = true)
     @Named("fromEntityToLocationAdminDto")
     LocationAdminDto fromEntityToLocationAdminDto(Location location);
@@ -63,6 +61,8 @@ public interface LocationMapper {
     @Mapping(target = "id", source = "id")
     @Mapping(target = "tenantId", source = "tenantId")
     @Mapping(target = "name", source = "name")
+    @Mapping(target = "logoPath", source = "logoPath")
+    @Mapping(target = "hotline", source = "hotline")
     @BeanMapping(ignoreByDefault = true)
     @Named("fromEntityToLocationDto")
     LocationDto fromEntityToLocationDto(Location location);
