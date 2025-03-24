@@ -923,12 +923,4 @@
     <changeSet author="Master" id="1739846395035-21">
         <dropColumn columnName="aes_secret_key" tableName="db_mst_location"/>
     </changeSet>
-    <changeSet author="Master" id="1739846395035-22">
-        <sql>
-            <![CDATA[
-            DELETE FROM db_fn_account WHERE id = 2;
-            DELETE FROM db_fn_group WHERE id = 15;
-            ]]>
-        </sql>
-    </changeSet>
 </databaseChangeLog>
