@@ -74,11 +74,15 @@ public class DbConfigController extends ABasicController {
 
     @GetMapping(value = "/get-by-name", produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiMessageDto<DbConfigAdminDto> getByName(@RequestParam("name") String name) {
-        DbConfig dbConfig = dbConfigRepository.findFirstByNameAndInitialize(name, true).orElse(null);
+        Location location = locationRepository.findFirstByTenantId(name).orElse(null);
+        if (location == null) {
+            return makeErrorResponse(ErrorCode.LOCATION_ERROR_NOT_FOUND, "Not found location");
+        }
+        userService.checkValidLocation(location);
+        DbConfig dbConfig = location.getDbConfig();
         if (dbConfig == null) {
             return makeErrorResponse(ErrorCode.DB_CONFIG_ERROR_NOT_FOUND, "Not found db config");
         }
-        userService.checkValidLocation(dbConfig.getLocation());
         return makeSuccessResponse(dbConfigMapper.fromEntityToDbConfigAdminDto(dbConfig), "Get db config success");
     }
 
