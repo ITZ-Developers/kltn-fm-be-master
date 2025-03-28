@@ -63,6 +63,9 @@ public interface LocationMapper {
     @Mapping(target = "name", source = "name")
     @Mapping(target = "logoPath", source = "logoPath")
     @Mapping(target = "hotline", source = "hotline")
+    @Mapping(source = "startDate", target = "startDate")
+    @Mapping(source = "expiredDate", target = "expiredDate")
+    @Mapping(target = "status", source = "status")
     @BeanMapping(ignoreByDefault = true)
     @Named("fromEntityToLocationDto")
     LocationDto fromEntityToLocationDto(Location location);

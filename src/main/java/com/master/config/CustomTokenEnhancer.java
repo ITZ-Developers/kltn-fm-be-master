@@ -47,7 +47,10 @@ public class CustomTokenEnhancer implements TokenEnhancer {
         RequestInfoDto info = getRequestInfoFromOAuth2Request(authentication);
         Map<String, Object> additionalInfo = new HashMap<>();
         AccountForTokenDto a;
-        if (Objects.equals(info.getGrantType(), SecurityConstant.GRANT_TYPE_EMPLOYEE)) {
+        if (List.of(
+                SecurityConstant.GRANT_TYPE_EMPLOYEE,
+                SecurityConstant.GRANT_TYPE_MOBILE
+        ).contains(info.getGrantType())) {
             a = getAccountEmployee(info);
         } else {
             a = getAccountByUsername(info.getUsername());
