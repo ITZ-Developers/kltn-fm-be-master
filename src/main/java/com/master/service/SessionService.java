@@ -99,7 +99,7 @@ public class SessionService {
         request.setUserKind(userKind);
         request.setTenantName(tenantName);
 
-        String key = cacheClientService.getKeyString(userKind, username, tenantName);
+        String key = cacheClientService.getKeyString(keyType, username, tenantName);
         CacheKeyDto dto = cacheClientService.removeKey(key);
         if (dto != null) {
             ProcessTenantForm<LockAccountRequest> form = new ProcessTenantForm<>();
