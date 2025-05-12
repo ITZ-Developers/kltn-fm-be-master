@@ -19,6 +19,5 @@ public class LoginEmployeeForm {
     private String tenantId;
     @EmployeeGrantType
     private String grantType;
-    @NotEmpty(message = "permissionIds is required")
     private List<Long> permissionIds = new ArrayList<>();
 }
