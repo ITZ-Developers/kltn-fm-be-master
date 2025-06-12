@@ -42,6 +42,7 @@ public class LogInterceptor implements HandlerInterceptor {
             "/v1/account/login-employee"
     );
     static final List<String> WHITE_LIST = List.of(
+            "/v1/account/profile"
     );
 
     @Override
@@ -52,7 +53,7 @@ public class LogInterceptor implements HandlerInterceptor {
         if (isAllowed(request, INTERNAL_REQUEST) && !httpService.checkInternalRequest(request)) {
             return handleUnauthorized(response, ErrorCode.GENERAL_ERROR_INVALID_API_KEY, "Full authentication is required to access this resource");
         }
-        if (!isAllowed(request, WHITE_LIST) && !isValidSession()) {
+        if (isAllowed(request, WHITE_LIST) && !isValidSession()) {
             return handleUnauthorized(response, ErrorCode.GENERAL_ERROR_INVALID_SESSION, "Invalid session");
         }
         long startTime = System.currentTimeMillis();
