@@ -23,15 +23,14 @@ import java.util.stream.Collectors;
 public class JsonToUrlEncodedAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        log.info("Token request content type: "+request.getContentType());
-        if (Objects.equals(request.getServletPath(), "/api/token") && request.getContentType()!=null && request.getContentType().contains( "application/json")) {
+        if (Objects.equals(request.getServletPath(), "/api/token") && request.getContentType() != null && request.getContentType().contains("application/json")) {
             byte[] json = ByteStreams.toByteArray(request.getInputStream());
-            Map<String, String> jsonMap = new ObjectMapper().readValue(json, Map.class);;
+            Map<String, String> jsonMap = new ObjectMapper().readValue(json, Map.class);
             Map<String, String[]> parameters =
                     jsonMap.entrySet().stream()
                             .collect(Collectors.toMap(
                                     Map.Entry::getKey,
-                                    e ->  new String[]{e.getValue()})
+                                    e -> new String[]{e.getValue()})
                             );
             HttpServletRequest requestWrapper = new RequestWrapper(request, parameters);
             filterChain.doFilter(requestWrapper, response);
