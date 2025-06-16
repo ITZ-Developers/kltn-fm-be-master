@@ -8,6 +8,7 @@ import com.master.feign.service.FeignTenantService;
 import com.master.form.account.*;
 import com.master.mapper.AccountMapper;
 import com.master.model.Account;
+import com.master.model.Customer;
 import com.master.model.Location;
 import com.master.redis.RedisConstant;
 import com.master.repository.*;
@@ -218,9 +219,20 @@ public class AccountController extends ABasicController{
 
     @GetMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiMessageDto<AccountDto> profile() {
-        Account account = accountRepository.findFirstByIdAndKind(getCurrentUser(), MasterConstant.USER_KIND_ADMIN).orElse(null);
+        Account account = accountRepository.findById(getCurrentUser()).orElse(null);
         if (account == null) {
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
+        }
+        if (!MasterConstant.STATUS_ACTIVE.equals(account.getStatus())) {
+            throw new BadRequestException(ErrorCode.ACCOUNT_ERROR_NOT_ACTIVE, "Account not active");
+        }
+        if (MasterConstant.USER_KIND_CUSTOMER.equals(account.getKind())) {
+            Customer customer = customerRepository.findById(getCurrentUser()).orElseThrow(
+                    () -> new BadRequestException(ErrorCode.CUSTOMER_ERROR_NOT_FOUND, "[Customer] Customer not found")
+            );
+            if (!MasterConstant.STATUS_ACTIVE.equals(customer.getStatus())) {
+                throw new BadRequestException(ErrorCode.CUSTOMER_ERROR_NOT_ACTIVE, "Customer not active");
+            }
         }
         return makeSuccessResponse(accountMapper.fromEntityToAccountDtoProfile(account), "Get profile success");
     }

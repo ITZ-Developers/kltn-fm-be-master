@@ -37,6 +37,7 @@ public class ErrorCode {
     public static final String ACCOUNT_ERROR_NOT_ALLOW_DISABLE_2FA = "ERROR-ACCOUNT-0015";
     public static final String ACCOUNT_ERROR_WRONG_CREDENTIAL = "ERROR-ACCOUNT-0016";
     public static final String ACCOUNT_ERROR_NEW_PASSWORD_SAME_OLD_PASSWORD = "ERROR-ACCOUNT-0017";
+    public static final String ACCOUNT_ERROR_NOT_ACTIVE = "ERROR-ACCOUNT-0018";
 
     /**
      * Starting error code Group
