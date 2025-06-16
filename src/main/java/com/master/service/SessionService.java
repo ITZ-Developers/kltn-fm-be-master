@@ -73,8 +73,9 @@ public class SessionService {
         }
         Map<String, CustomerAdminDto> keyToAccountMap = new HashMap<>(accounts.size());
         for (CustomerAdminDto account : accounts) {
-            String key = cacheClientService.getKeyString(RedisConstant.KEY_CUSTOMER, account.getAccount().getUsername(), null);
-            keyToAccountMap.put(key, account);
+            String keyPattern = cacheClientService.getKeyString(RedisConstant.KEY_CUSTOMER, account.getAccount().getUsername(), "*");
+            List<CacheKeyDto> dtos = cacheClientService.getKeyCacheByPattern(keyPattern);
+            keyToAccountMap.put(dtos.get(0).getKey(), account);
         }
         List<CacheKeyDto> dtos = cacheClientService.getMultiKeys(new ArrayList<>(keyToAccountMap.keySet()));
         if (dtos == null || dtos.isEmpty()) {
@@ -91,14 +92,80 @@ public class SessionService {
         }
     }
 
-    public void sendMessageLockAccount(Integer keyType, String username, Integer userKind, String tenantName) {
+    public void sendMessageLockAdmin(String username) {
+        Integer keyType = RedisConstant.KEY_ADMIN;
         LockAccountRequest request = new LockAccountRequest();
         request.setApp(MasterConstant.APP_MASTER);
         request.setKeyType(keyType);
         request.setUsername(username);
-        request.setUserKind(userKind);
-        request.setTenantName(tenantName);
+        request.setUserKind(MasterConstant.USER_KIND_ADMIN);
+        String key = cacheClientService.getKeyString(keyType, username, null);
+        CacheKeyDto dto = cacheClientService.removeKey(key);
+        if (dto != null) {
+            ProcessTenantForm<LockAccountRequest> form = new ProcessTenantForm<>();
+            form.setAppName(MasterConstant.BACKEND_APP);
+            form.setQueueName(notificationQueue);
+            form.setCmd(MasterConstant.CMD_LOCK_DEVICE);
+            form.setData(request);
+            rabbitService.handleSendMsg(form);
+        }
+    }
 
+    public void sendMessageLockCustomer(String username) {
+        Integer keyType = RedisConstant.KEY_CUSTOMER;
+        String keyPattern = cacheClientService.getKeyString(keyType, username, "*");
+
+        List<CacheKeyDto> dtos = cacheClientService.removeKeyByPattern(keyPattern);
+        for (CacheKeyDto dto : dtos) {
+            String[] keyParts = dto.getKey().split(":");
+            if (keyParts.length <= 2 || StringUtils.isBlank(keyParts[1])) {
+                continue;
+            }
+            String tenantName = keyParts[2];
+
+            LockAccountRequest request = new LockAccountRequest();
+            request.setApp(MasterConstant.APP_MASTER);
+            request.setKeyType(keyType);
+            request.setUsername(username);
+            request.setUserKind(MasterConstant.USER_KIND_CUSTOMER);
+            request.setTenantName(tenantName);
+
+            ProcessTenantForm<LockAccountRequest> form = new ProcessTenantForm<>();
+            form.setAppName(MasterConstant.BACKEND_APP);
+            form.setQueueName(notificationQueue);
+            form.setCmd(MasterConstant.CMD_LOCK_DEVICE);
+            form.setData(request);
+            rabbitService.handleSendMsg(form);
+        }
+    }
+
+    public void sendMessageLockCustomer(String username, String tenantName) {
+        Integer keyType = RedisConstant.KEY_CUSTOMER;
+        LockAccountRequest request = new LockAccountRequest();
+        request.setApp(MasterConstant.APP_MASTER);
+        request.setKeyType(keyType);
+        request.setUsername(username);
+        request.setUserKind(MasterConstant.USER_KIND_CUSTOMER);
+        request.setTenantName(tenantName);
+        String key = cacheClientService.getKeyString(keyType, username, tenantName);
+        CacheKeyDto dto = cacheClientService.removeKey(key);
+        if (dto != null) {
+            ProcessTenantForm<LockAccountRequest> form = new ProcessTenantForm<>();
+            form.setAppName(MasterConstant.BACKEND_APP);
+            form.setQueueName(notificationQueue);
+            form.setCmd(MasterConstant.CMD_LOCK_DEVICE);
+            form.setData(request);
+            rabbitService.handleSendMsg(form);
+        }
+    }
+
+    public void sendMessageLockEmployee(Integer keyType, String username, String tenantName) {
+        LockAccountRequest request = new LockAccountRequest();
+        request.setApp(MasterConstant.APP_MASTER);
+        request.setKeyType(keyType);
+        request.setUsername(username);
+        request.setUserKind(MasterConstant.USER_KIND_EMPLOYEE);
+        request.setTenantName(tenantName);
         String key = cacheClientService.getKeyString(keyType, username, tenantName);
         CacheKeyDto dto = cacheClientService.removeKey(key);
         if (dto != null) {
@@ -142,8 +209,8 @@ public class SessionService {
 
     public void sendMessageLockLocation(Location location) {
         Account account = location.getCustomer().getAccount();
-        sendMessageLockAccount(RedisConstant.KEY_CUSTOMER, account.getUsername(), account.getKind(), null);
         String tenantName = location.getTenantId();
+        sendMessageLockCustomer(account.getUsername(), tenantName);
         sendMessageLockAccountsByTenantId(RedisConstant.KEY_EMPLOYEE, tenantName);
         sendMessageLockAccountsByTenantId(RedisConstant.KEY_MOBILE, tenantName);
     }
@@ -157,7 +224,14 @@ public class SessionService {
             });
         } else {
             List<Account> accounts = accountRepository.findAllByGroupId(group.getId());
-            accounts.forEach(account -> sendMessageLockAccount(group.getKind(), account.getUsername(), account.getKind(), null));
+            accounts.forEach(account -> {
+                String username = account.getUsername();
+                if (MasterConstant.USER_KIND_CUSTOMER.equals(account.getKind())) {
+                    sendMessageLockCustomer(username);
+                } else {
+                    sendMessageLockAdmin(username);
+                }
+            });
         }
     }
 }

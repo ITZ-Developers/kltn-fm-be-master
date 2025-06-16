@@ -20,6 +20,7 @@ public interface AccountRepository extends JpaRepository<Account, Long>, JpaSpec
     Boolean existsByEmail(String email);
     Boolean existsByGroupId(Long id);
     Optional<Account> findFirstByUsernameAndKind(String username, Integer kind);
+    Optional<Account> findFirstByIdAndKind(Long id, Integer kind);
     List<Account> findAllByGroupId(Long id);
     @Modifying
     @Transactional

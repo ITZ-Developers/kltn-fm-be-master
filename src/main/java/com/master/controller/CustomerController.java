@@ -8,7 +8,6 @@ import com.master.dto.customer.CustomerAdminDto;
 import com.master.dto.customer.CustomerDto;
 import com.master.dto.location.LocationDto;
 import com.master.exception.BadRequestException;
-import com.master.exception.UnauthorizationException;
 import com.master.form.account.RequestKeyForm;
 import com.master.form.customer.CreateCustomerForm;
 import com.master.form.customer.UpdateCustomerForm;
@@ -114,7 +113,7 @@ public class CustomerController extends ABasicController {
         Page<Customer> customers = customerRepository.findAll(customerCriteria.getCriteria(), pageable);
         ResponseListDto<List<CustomerAdminDto>> responseListDto = new ResponseListDto<>();
         List<CustomerAdminDto> dtos = customerMapper.fromEntityListToCustomerAdminDtoList(customers.getContent());
-        sessionService.mappingLastLoginForListCustomers(dtos);
+//        sessionService.mappingLastLoginForListCustomers(dtos);
         responseListDto.setContent(dtos);
         responseListDto.setTotalPages(customers.getTotalPages());
         responseListDto.setTotalElements(customers.getTotalElements());
@@ -167,7 +166,7 @@ public class CustomerController extends ABasicController {
     @PutMapping(value = "/update", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('CU_U')")
     public ApiMessageDto<String> update(@Valid @RequestBody UpdateCustomerForm updateCustomerForm, BindingResult bindingResult) {
-        Account account = accountRepository.findById(updateCustomerForm.getId()).orElse(null);
+        Account account = accountRepository.findFirstByIdAndKind(updateCustomerForm.getId(), MasterConstant.USER_KIND_CUSTOMER).orElse(null);
         if (account == null) {
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
         }
@@ -196,7 +195,12 @@ public class CustomerController extends ABasicController {
         customer.setAccount(account);
         customerRepository.save(customer);
         if (isLock) {
-            sessionService.sendMessageLockAccount(RedisConstant.KEY_CUSTOMER, account.getUsername(), account.getKind(), null);
+            List<String> tenantNames = locationRepository.findAllDistinctTenantIdByCustomerId(customer.getId());
+            sessionService.sendMessageLockCustomer(account.getUsername());
+            tenantNames.forEach(tenant -> {
+                sessionService.sendMessageLockAccountsByTenantId(RedisConstant.KEY_EMPLOYEE, tenant);
+                sessionService.sendMessageLockAccountsByTenantId(RedisConstant.KEY_MOBILE, tenant);
+            });
         }
         return makeSuccessResponse(null, "Update customer success");
     }
@@ -211,10 +215,16 @@ public class CustomerController extends ABasicController {
         if (locationRepository.existsByCustomerId(id)) {
             return makeErrorResponse(ErrorCode.CUSTOMER_ERROR_NOT_ALLOW_DELETE, "Not allowed to delete customer");
         }
+        String username = customer.getAccount().getUsername();
         accountRepository.deleteAllByCustomerId(id);
         customerRepository.deleteById(id);
         if (MasterConstant.STATUS_ACTIVE.equals(customer.getStatus())) {
-            sessionService.sendMessageLockAccount(RedisConstant.KEY_CUSTOMER, customer.getAccount().getUsername(), customer.getAccount().getKind(), null);
+            List<String> tenantNames = locationRepository.findAllDistinctTenantIdByCustomerId(customer.getId());
+            sessionService.sendMessageLockCustomer(username);
+            tenantNames.forEach(tenant -> {
+                sessionService.sendMessageLockAccountsByTenantId(RedisConstant.KEY_EMPLOYEE, tenant);
+                sessionService.sendMessageLockAccountsByTenantId(RedisConstant.KEY_MOBILE, tenant);
+            });
         }
         return makeSuccessResponse(null, "Delete customer success");
     }
@@ -275,7 +285,7 @@ public class CustomerController extends ABasicController {
         contentBuilder.append("-----BEGIN PRIVATE KEY-----").append("\n");
         contentBuilder.append(privateKey).append("\n");
         contentBuilder.append("-----END PRIVATE KEY-----").append("\n");
-        String key = cacheClientService.getKeyString(RedisConstant.KEY_CUSTOMER, customer.getAccount().getUsername(), null);
+        String key = cacheClientService.getKeyString(RedisConstant.KEY_CUSTOMER, customer.getAccount().getUsername(), getCurrentTenantName());
         cacheClientService.putPublicKey(key, publicKey);
         byte[] contentBytes = contentBuilder.toString().getBytes(StandardCharsets.UTF_8);
         ByteArrayResource byteArrayResource = new ByteArrayResource(contentBytes);

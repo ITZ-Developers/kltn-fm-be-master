@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/v1/account")
@@ -81,7 +82,7 @@ public class AccountController extends ABasicController{
     @GetMapping(value = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_V')")
     public ApiMessageDto<AccountAdminDto> get(@PathVariable("id") Long id) {
-        Account account = accountRepository.findById(id).orElse(null);
+        Account account = accountRepository.findFirstByIdAndKind(id, MasterConstant.USER_KIND_ADMIN).orElse(null);
         if (account == null) {
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
         }
@@ -99,7 +100,7 @@ public class AccountController extends ABasicController{
         Page<Account> accounts = accountRepository.findAll(accountCriteria.getCriteria(), pageable);
         ResponseListDto<List<AccountAdminDto>> responseListObj = new ResponseListDto<>();
         List<AccountAdminDto> dtos = accountMapper.fromEntityListToAccountAdminDtoList(accounts.getContent());
-        sessionService.mappingLastLoginForListAccounts(dtos);
+//        sessionService.mappingLastLoginForListAccounts(dtos);
         responseListObj.setContent(dtos);
         responseListObj.setTotalPages(accounts.getTotalPages());
         responseListObj.setTotalElements(accounts.getTotalElements());
@@ -109,6 +110,7 @@ public class AccountController extends ABasicController{
     @GetMapping(value = "/auto-complete", produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiMessageDto<ResponseListDto<List<AccountDto>>> autoComplete(AccountCriteria accountCriteria) {
         Pageable pageable = accountCriteria.getIsPaged().equals(MasterConstant.BOOLEAN_TRUE) ? PageRequest.of(0, 10) : PageRequest.of(0, Integer.MAX_VALUE);
+        accountCriteria.setKind(MasterConstant.USER_KIND_ADMIN);
         accountCriteria.setStatus(MasterConstant.STATUS_ACTIVE);
         Page<Account> accounts = accountRepository.findAll(accountCriteria.getCriteria(), pageable);
         ResponseListDto<List<AccountDto>> responseListObj = new ResponseListDto<>();
@@ -148,19 +150,19 @@ public class AccountController extends ABasicController{
     @PutMapping(value = "/update-admin", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_U_AD')")
     public ApiMessageDto<String> updateAdmin(@Valid @RequestBody UpdateAccountAdminForm updateAccountAdminForm, BindingResult bindingResult) {
-        Account account = accountRepository.findById(updateAccountAdminForm.getId()).orElse(null);
+        Account account = accountRepository.findFirstByIdAndKind(updateAccountAdminForm.getId(), MasterConstant.USER_KIND_ADMIN).orElse(null);
         if (account == null) {
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
         }
-        if (updateAccountAdminForm.getEmail() != null && !updateAccountAdminForm.getEmail().equals(account.getEmail())){
+        if (updateAccountAdminForm.getEmail() != null && !updateAccountAdminForm.getEmail().equals(account.getEmail())) {
             Account accountByEmail = accountRepository.findFirstByEmail(updateAccountAdminForm.getEmail()).orElse(null);
-            if (accountByEmail != null){
+            if (accountByEmail != null) {
                 return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_EMAIL_EXISTED, "Email existed");
             }
         }
-        if (updateAccountAdminForm.getPhone() != null && !updateAccountAdminForm.getPhone().equals(account.getPhone())){
+        if (updateAccountAdminForm.getPhone() != null && !updateAccountAdminForm.getPhone().equals(account.getPhone())) {
             Account accountByPhone = accountRepository.findFirstByPhone(updateAccountAdminForm.getPhone()).orElse(null);
-            if (accountByPhone != null){
+            if (accountByPhone != null) {
                 return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_PHONE_EXISTED, "Phone existed");
             }
         }
@@ -171,6 +173,7 @@ public class AccountController extends ABasicController{
             account.setAvatarPath(updateAccountAdminForm.getAvatarPath());
         }
         boolean isLock = MasterConstant.STATUS_ACTIVE.equals(account.getStatus()) && !MasterConstant.STATUS_ACTIVE.equals(updateAccountAdminForm.getStatus());
+        boolean isGroupChanged = !Objects.equals(updateAccountAdminForm.getGroupId(), account.getGroup().getId());
         accountMapper.fromUpdateAccountAdminFormToEntity(updateAccountAdminForm, account);
         Group group = groupRepository.findFirstByIdAndKind(updateAccountAdminForm.getGroupId(), MasterConstant.USER_KIND_ADMIN).orElse(null);
         if (group == null) {
@@ -181,8 +184,8 @@ public class AccountController extends ABasicController{
             account.setPassword(passwordEncoder.encode(updateAccountAdminForm.getPassword()));
         }
         accountRepository.save(account);
-        if (isLock) {
-            sessionService.sendMessageLockAccount(RedisConstant.KEY_ADMIN, account.getUsername(), account.getKind(), null);
+        if (isLock || isGroupChanged) {
+            sessionService.sendMessageLockAdmin(account.getUsername());
         }
         return makeSuccessResponse(null, "Update account admin success");
     }
@@ -190,8 +193,11 @@ public class AccountController extends ABasicController{
     @DeleteMapping(value = "/delete/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ACC_D')")
     public ApiMessageDto<String> delete(@PathVariable("id") Long id) {
-        Account account = accountRepository.findById(id).orElse(null);
+        Account account = accountRepository.findFirstByIdAndKind(id, MasterConstant.USER_KIND_ADMIN).orElse(null);
         if (account == null) {
+            return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
+        }
+        if (!MasterConstant.USER_KIND_ADMIN.equals(account.getKind())) {
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
         }
         if (account.getIsSuperAdmin()) {
@@ -205,14 +211,14 @@ public class AccountController extends ABasicController{
         customerRepository.deleteAllByAccountId(id);
         accountRepository.deleteById(id);
         if (MasterConstant.STATUS_ACTIVE.equals(account.getStatus())) {
-            sessionService.sendMessageLockAccount(RedisConstant.KEY_ADMIN, account.getUsername(), account.getKind(), null);
+            sessionService.sendMessageLockAdmin(account.getUsername());
         }
         return makeSuccessResponse(null, "Delete account success");
     }
 
     @GetMapping(value = "/profile", produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiMessageDto<AccountDto> profile() {
-        Account account = accountRepository.findById(getCurrentUser()).orElse(null);
+        Account account = accountRepository.findFirstByIdAndKind(getCurrentUser(), MasterConstant.USER_KIND_ADMIN).orElse(null);
         if (account == null) {
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
         }
@@ -221,11 +227,11 @@ public class AccountController extends ABasicController{
 
     @PutMapping(value = "/update-profile-admin", produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiMessageDto<String> updateProfileAdmin(@Valid @RequestBody UpdateProfileAdminForm updateProfileAdminForm, BindingResult bindingResult) {
-        Account account = accountRepository.findById(getCurrentUser()).orElse(null);
+        Account account = accountRepository.findFirstByIdAndKind(getCurrentUser(), MasterConstant.USER_KIND_ADMIN).orElse(null);
         if (account == null) {
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_NOT_FOUND, "Not found account");
         }
-        if(!passwordEncoder.matches(updateProfileAdminForm.getOldPassword(), account.getPassword())){
+        if (!passwordEncoder.matches(updateProfileAdminForm.getOldPassword(), account.getPassword())) {
             return makeErrorResponse(ErrorCode.ACCOUNT_ERROR_WRONG_PASSWORD, "Old password is incorrect");
         }
         if (StringUtils.isNoneBlank(updateProfileAdminForm.getAvatarPath())) {

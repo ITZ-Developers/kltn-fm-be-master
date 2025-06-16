@@ -1,5 +1,6 @@
 package com.master.redis;
 
+import com.master.constant.MasterConstant;
 import com.master.feign.dto.CacheKeyDto;
 import com.master.feign.dto.CheckSessionDto;
 import com.master.feign.dto.GetMultiKeyForm;
@@ -33,7 +34,7 @@ public class CacheClientService {
         if (RedisConstant.KEY_ADMIN.equals(keyType)) {
             return PREFIX_KEY_ADMIN + username;
         } else if (RedisConstant.KEY_CUSTOMER.equals(keyType)) {
-            return PREFIX_KEY_CUSTOMER + username;
+            return PREFIX_KEY_CUSTOMER + username + ":" + tenantName;
         } else if (RedisConstant.KEY_EMPLOYEE.equals(keyType)) {
             return PREFIX_KEY_EMPLOYEE + tenantName + ":" + username;
         } else {
@@ -47,7 +48,13 @@ public class CacheClientService {
             account.setLastLogin(new Date());
             accountRepository.save(account);
         }
-        sessionService.sendMessageLockAccount(keyType, username, userKind, tenantName);
+        if (MasterConstant.USER_KIND_ADMIN.equals(userKind)) {
+            sessionService.sendMessageLockAdmin(username);
+        } else if (MasterConstant.USER_KIND_CUSTOMER.equals(userKind)) {
+            sessionService.sendMessageLockCustomer(username);
+        } else {
+            sessionService.sendMessageLockEmployee(keyType, username, tenantName);
+        }
     }
 
     public void putKeyCache(String key, String sessionId) {
