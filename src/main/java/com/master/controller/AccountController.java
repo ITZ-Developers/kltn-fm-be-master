@@ -380,6 +380,8 @@ public class AccountController extends ABasicController{
 
     @PostMapping(value = "/login-employee", produces = MediaType.APPLICATION_JSON_VALUE)
     public OAuth2AccessToken loginEmployee(@Valid @RequestBody LoginEmployeeForm form, BindingResult bindingResult) {
+        Location location = locationRepository.findFirstByTenantId(form.getTenantId()).orElse(null);
+        userService.checkValidLocation(location);
         return oauth2JWTService.getAccessTokenForEmployee(form);
     }
 }
